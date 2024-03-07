@@ -1,0 +1,3 @@
+Seconden: 10
+Stappen tussenin: 1
+Modes: False
