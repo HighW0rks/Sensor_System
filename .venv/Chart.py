@@ -5,6 +5,7 @@ import ctypes
 import main
 import xlsxwriter
 import datetime
+import script
 
 class App(ctk.CTk):
     def __init__(self):
@@ -31,7 +32,7 @@ class App(ctk.CTk):
         self.format_value_one = 50
         self.format_value_two = 50
         self.format_value_three = 50
-        self.status_start_stop = True
+        self.status_start_stop = False
         self.status_excel = True
         self.loading()
 
@@ -41,7 +42,7 @@ class App(ctk.CTk):
         self.Masterchart()
         self.Chartline()
         self.Togglebutton()
-        self.start_excel()
+        self.excel_button()
         self.loop()
 
     def Topbar(self):
@@ -67,9 +68,12 @@ class App(ctk.CTk):
             self.Menu_Config.place(x=self.Place_Button_X, y=self.Place_Button_Y)
             self.Menu_Sliders = ctk.CTkButton(self, text="Sliders", command=self.Topbar_Sliders)
             self.Menu_Sliders.place(x=self.Place_Button_X, y=self.Place_Button_Y*2)
+            self.Menu_Script = ctk.CTkButton(self, text="Script", command=self.open_script)
+            self.Menu_Script.place(x=self.Place_Button_X, y=self.Place_Button_Y*3)
         else:
             self.Menu_Config.place_forget()
             self.Menu_Sliders.place_forget()
+            self.Menu_Script.place_forget()
         self.Menu_Two_Show = not self.Menu_Two_Show
 
     def Topbar_Sliders(self):
@@ -147,9 +151,67 @@ class App(ctk.CTk):
         self.Drawline_3 = tkchart.Line(master=self.Masterchart,
                                        color="green",
                                        size=2)
+
+    def excel_button(self):
+        self.Stop_Excel_button = ctk.CTkButton(self, text="Stop saving data", command=self.toggle_excel)
+        self.Start_Excel_button = ctk.CTkButton(self, text="Start saving data", command=self.toggle_excel)
+        self.Stop_Excel_button.grid(row=5, column=0, padx=30, pady=(10, 0))
+        self.Start_Excel_button.grid(row=5, column=0, padx=30, pady=(10, 0))
+        self.start_excel()
+    def start_excel(self):
+        current_time = self.current_time()
+        Location = Configuration.ConfigurationApp().readfile_value(4)
+        self.workbook = xlsxwriter.Workbook(fr"{Location}\{current_time}.xlsx")
+        self.worksheet = self.workbook.add_worksheet()
+
+    def toggle_excel(self):
+        self.status_excel = not self.status_excel
+        if self.status_excel:
+            self.Start_Excel_button.grid(row=5, column=0, padx=30, pady=(10,0))
+            self.Stop_Excel_button.grid_forget()
+            self.workbook.close()
+        else:
+            self.Stop_Excel_button.grid(row=5, column=0, padx=30, pady=(10,0))
+            self.Start_Excel_button.grid_forget()
+            self.start_excel()
+        self.update()
+
+    def write_excel(self):
+        if not self.status_excel:
+            self.time += 1
+            current_time = self.current_time()
+            data_1 = float(self.format_value_one)
+            data_2 = float(self.format_value_two)
+            data_3 = float(self.format_value_three)
+
+            self.worksheet.write(0, 0, 'Time')
+            self.worksheet.set_column('A:A', 20)
+            self.worksheet.write(0, 1, 'Value 1')
+            self.worksheet.write(0, 2, 'Value 2')
+            self.worksheet.write(0, 3, 'Value 3')
+
+            self.worksheet.write(self.time, 0, current_time)
+            self.worksheet.write(self.time, 1, data_1)
+            self.worksheet.write(self.time, 2, data_2)
+            self.worksheet.write(self.time, 3, data_3)
+
+
+
     def Togglebutton(self):
-        self.pausebutton = ctk.CTkButton(self, text="Stop/Start", command=self.toggle_status)
-        self.pausebutton.grid(row=5, column=0, padx=30, pady=10)
+        self.pausebutton = ctk.CTkButton(self, text="Stop", command=self.toggle_status)
+        self.startbutton = ctk.CTkButton(self, text="Start", command=self.toggle_status)
+        self.pausebutton.grid(row=6, column=0, padx=30)
+        self.startbutton.grid(row=6, column=0, padx=30)
+
+    def toggle_status(self):
+        self.status_start_stop = not self.status_start_stop
+        if self.status_start_stop:
+            self.startbutton.grid_forget()
+            self.pausebutton.grid(row=6, column=0, padx=30)
+        else:
+            self.pausebutton.grid_forget()
+            self.startbutton.grid(row=6, column=0, padx=30)
+        self.update()
 
     def Sliders(self):
         self.inputchannel_One = ctk.CTkEntry(self)
@@ -225,43 +287,9 @@ class App(ctk.CTk):
         self.inputchannel_Three.delete(0, ctk.END, )
         self.inputchannel_Three.insert(0, str(self.format_value_three) + " %")
 
-    def toggle_status(self):
-        self.status_start_stop = not self.status_start_stop
-
     def current_time(self):
         current_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         return current_time
-
-    def start_excel(self):
-        self.Save_Excel_button = ctk.CTkButton(self, text="Start/stop saving data", command=self.toggle_excel)
-        self.Save_Excel_button.place(x=0,y=300)
-        current_time = self.current_time()
-        self.workbook = xlsxwriter.Workbook(fr"Excel\{current_time}.xlsx")
-        self.worksheet = self.workbook.add_worksheet()
-
-    def toggle_excel(self):
-        self.status_excel = not self.status_excel
-
-    def write_excel(self):
-        if self.status_excel:
-            self.time += 1
-            current_time = self.current_time()
-            data_1 = float(self.format_value_one)
-            data_2 = float(self.format_value_two)
-            data_3 = float(self.format_value_three)
-
-            self.worksheet.write(0, 0, 'Time')
-            self.worksheet.set_column('A:A', 20)
-            self.worksheet.write(0, 1, 'Value 1')
-            self.worksheet.write(0, 2, 'Value 2')
-            self.worksheet.write(0, 3, 'Value 3')
-
-            self.worksheet.write(self.time, 0, current_time)
-            self.worksheet.write(self.time, 1, data_1)
-            self.worksheet.write(self.time, 2, data_2)
-            self.worksheet.write(self.time, 3, data_3)
-
-
 
     def loop(self):
         if self.status_start_stop:
@@ -279,6 +307,12 @@ class App(ctk.CTk):
     def open_settings(self):
         self.withdraw()
         app = Configuration.ConfigurationApp()
+        app.protocol("WM_DELETE_WINDOW", app.destroy)
+        app.mainloop()
+
+    def open_script(self):
+        self.withdraw()
+        app = script.app()
         app.protocol("WM_DELETE_WINDOW", app.destroy)
         app.mainloop()
 

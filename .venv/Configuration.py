@@ -1,4 +1,5 @@
 import Chart
+import tkinter as tk
 import customtkinter as ctk
 import time
 import main
@@ -23,7 +24,7 @@ class ConfigurationApp(ctk.CTk):
         self.Frame_Input.grid(row=1, column=0,padx=(self.X_as_middle-self.Frame_Input.winfo_reqwidth())/2,pady=40, stick="nsew")
         self.Frame_Bool = ctk.CTkFrame(self)
         self.Frame_Bool.grid(row=1,column=1,padx=(self.X_as_middle-self.Frame_Bool.winfo_reqwidth())/2,pady=40, sticky="nsew")
-        self.Close_Save_Button = ctk.CTkButton(self, text="Save & Close", command=self.Close_Save)
+        self.Close_Save_Button = ctk.CTkButton(self, text="Save & Close", command=self.destroy)
         self.Close_Save_Button.place(x=self.X_as_middle-self.Close_Save_Button.winfo_reqwidth()/2, y=600-50)
         self.Title()
         self.Section_Input()
@@ -46,11 +47,13 @@ class ConfigurationApp(ctk.CTk):
         self.config_option_seconden_step.insert(0,self.readfile_value(2))
         self.config_option_seconden_step.grid(row=2,column=1)
         self.config_option_seconden_step.bind("<Return>", lambda event: self.text_config(2, self.config_option_seconden_step))
+        self.Input_Folder = ctk.CTkButton(master=self.Frame_Input, text="Select a folder",
+                                          command=self.Folder_Location_Config)
+        self.Input_Folder.grid(row=3, column=1, padx=20, pady=20)
 
     def Close_Save(self):
         self.text_config(2,self.config_option_seconden_step)
         self.text_config(1, self.config_option_seconden)
-        self.destroy()
 
     def Section_Bool(self):
         dark_mode_state = self.read_dark_mode_state_from_file()
@@ -68,14 +71,20 @@ class ConfigurationApp(ctk.CTk):
     def readfile_value(self, row):
         with open(self.config_file,"r") as read:
             self.config_text_value = read.readlines()
-        self.parameter_text_configvalue = str(self.config_text_value[row - 1]).split(": ")[1].strip()
+        try:
+            self.parameter_text_configvalue = str(self.config_text_value[row - 1]).split(": ")[1].strip()
+        except IndexError:
+            self.parameter_text_configvalue = ""
         return self.parameter_text_configvalue
 
     def text_config(self, row, name):
         with open(self.config_file, "r") as read:
             self.config_text_value = read.readlines()
         self.parameter_text_configname = str(self.config_text_value[row - 1]).split(": ")[0].strip()
-        self.config_new_value = name.get()
+        try:
+            self.config_new_value = name.get()
+        except Exception:
+            self.config_new_value = name
         self.updated_text_row = f"{self.parameter_text_configname}: {self.config_new_value}\n"
         self.config_text_value[row - 1] = self.updated_text_row
         with open(self.config_file, "w") as write:
@@ -93,10 +102,15 @@ class ConfigurationApp(ctk.CTk):
             write.writelines(self.config_bool_value)
         self.after(0, self.restart)
 
+    def Folder_Location_Config(self):
+        self.Folder_Location = tk.filedialog.askdirectory()
+        self.text_config(4,self.Folder_Location)
+
     def restart(self):
         self.main_app.background_color()
 
     def destroy(self):
+        self.Close_Save()
         app = Chart.App()
         app.deiconify()
         super().destroy()

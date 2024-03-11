@@ -4,8 +4,31 @@ import random
 import Configuration
 import Chart
 import time
-import PPM_Meter
+import Sensor
 import sys
+
+class First_check(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.geometry("250x100")
+        self.resizable(width=False, height=False)
+        self.title("Error")
+        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
+        self.Location_check()
+
+    def Location_check(self):
+        Location = Configuration.ConfigurationApp().readfile_value(4)
+        if len(Location) <= 0:
+            self.Error_text = ctk.CTkLabel(self, text="Error!\nNo folder location found")
+            self.update()
+            self.Error_text.place(x=self.winfo_reqwidth()/2-self.Error_text.winfo_reqwidth()/4, y=0)
+            self.Location_button = ctk.CTkButton(self, text="Select a folder", command=Configuration.ConfigurationApp().Folder_Location_Config)
+            self.Location_button.place(x=self.winfo_reqwidth()/2-self.Location_button.winfo_reqwidth()/4, y=50)
+            self.Location_check()
+        else:
+            self.destroy()
+            app = MainApp()
+            app.mainloop()
 
 class MainApp(ctk.CTk):
     def __init__(self):
@@ -43,7 +66,7 @@ class MainApp(ctk.CTk):
 
     def open_PPM_Meter(self):
         self.withdraw()
-        app = PPM_Meter.App()
+        app = Sensor.App()
         app.protocol("WM_DELETE_WINDOW", app.destroy)
         app.mainloop()
 
@@ -52,5 +75,5 @@ class MainApp(ctk.CTk):
         sys.exit()
 
 if __name__ == "__main__":
-    mainapp = MainApp()
+    mainapp = First_check()
     mainapp.mainloop()

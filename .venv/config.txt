@@ -1,3 +1,4 @@
-Seconden: 10
-Stappen tussenin: 1
+Seconden: 100
+Stappen tussenin: 10
 Modes: False
+Folder:: C:/Users/rijken.b/PycharmProjects/Sensor_System/.venv/Excel
