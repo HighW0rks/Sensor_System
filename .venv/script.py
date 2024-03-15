@@ -1,14 +1,17 @@
 import customtkinter as ctk
-import Chart
 
 class app(ctk.CTk):
+    
     def __init__(self):
         super().__init__()
         self.geometry("500x500")
-        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
         self.resizable(width=False, height=False)
+        self.time_entry_array = []
+        self.setpoint_value_entry_array = []
+        self.channel_value_combobox_array = []
         self.entries = []
         self.load()
+        
 
     def load(self):
         self.Scroll_Frame()
@@ -34,28 +37,37 @@ class app(ctk.CTk):
     def Entry(self):
         for i in range(10):
             if i < len(self.entries):
-                self.entry_value = self.entries[i].split(". ")[1].strip()
+                self.time_value = self.entries[i].split(", ")[0].split(".")[1].strip()
+                self.setpoint_value = self.entries[i].split(", ")[1].strip()
+                self.combobox_value = self.entries[i].split(", ")[2].strip()
             else:
-                self.entry_value = ""
-            self.entry = ctk.CTkEntry(self.scrollable_frame, width=140, height=30)
-            self.entry.grid(row=i, column=1)
-            self.entry.insert(0, self.entry_value)
-            self.entry.bind("<Return>", lambda event, index=i, entry=self.entry: self.update_script_file(index, entry))
-            self.scrollable_frame_entry.append(self.entry)
+                self.time_value = ""
+                self.setpoint_value = ""
+                self.combobox_value = ""
 
-    def update_script_file(self, index, entry):
-        try:
-            self.entry_content = int(entry.get())
-            with open("script.txt", "r") as file:
-                lines = file.readlines()
-            lines[index] = f"{index + 1}. {self.entry_content}\n"
-            with open("script.txt", "w") as file:
-                file.writelines(lines)
+            self.time_entry = ctk.CTkEntry(self.scrollable_frame, width=60, height=30, justify="center")
+            self.time_entry.grid(row=i, column=1)
+            self.time_entry.insert(0, self.time_value)
+            self.time_entry_array.append(self.time_entry)
+            self.setpoint_value_entry = ctk.CTkEntry(self.scrollable_frame, width=60, height=30, justify="center")
+            self.setpoint_value_entry.grid(row=i, column=2)
+            self.setpoint_value_entry.insert(0, self.setpoint_value)
+            self.setpoint_value_entry_array.append(self.setpoint_value_entry)
+            self.channel_value_combobox = ctk.CTkComboBox(self.scrollable_frame, width=60, height=30, justify="center", values=["1","2","3","All"], command= lambda event: self.update_script_file())
+            self.channel_value_combobox.grid(row=i, column=3)
+            self.channel_value_combobox.set(self.combobox_value)
+            self.channel_value_combobox_array.append(self.channel_value_combobox)
+            self.time_entry.bind("<Return>", lambda event: self.update_script_file())
+            self.setpoint_value_entry.bind("<Return>", lambda event: self.update_script_file())
+            self.scrollable_frame_entry.append(self.time_entry)
 
-        except ValueError:
-            entry.delete(0, ctk.END)
-            entry.insert(0, "Invalid value")
-            self.after(2000, lambda: self.deletemessage(entry))
+    def update_script_file(self):
+        with open("script.txt", "r") as file:
+            lines = file.readlines()
+        for i in range(10):
+            lines[i] = f"{i + 1}. {self.time_entry_array[i].get()}, {self.setpoint_value_entry_array[i].get()}, {self.channel_value_combobox_array[i].get()}\n"
+        with open("script.txt", "w") as file:
+            file.writelines(lines)
 
     def reset_button(self):
         self.reset_button = ctk.CTkButton(self, text="Reset script", command=self.confirm_reset)
@@ -77,8 +89,6 @@ class app(ctk.CTk):
 
     def destroy(self):
         super().destroy()
-        app = Chart.App()
-        app.deiconify()
 
 
 class Confirm(ctk.CTk):
@@ -87,7 +97,6 @@ class Confirm(ctk.CTk):
         self.geometry("200x200")
         self.title("Confirm")
         self.resizable(width=True, height=True)
-        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
         self.parent = parent
         self.Confirm()
 
@@ -105,3 +114,7 @@ class Confirm(ctk.CTk):
 
     def destroy(self):
         super().destroy()
+
+
+if __name__ == '__main__':
+    app().mainloop()
