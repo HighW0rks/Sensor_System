@@ -12,8 +12,16 @@ import script
 import propar
 
 class App(ctk.CTk):
-    def __init__(self):
+    def __init__(self,con):
         super().__init__()
+        self.c = con
+        print(self.c)
+        self.flow1 = self.c.flow_1
+        self.flow2 = self.c.flow_2
+        self.flow3 = self.c.flow_3
+        self.status_flow1 = self.c.status_flow_1
+        self.status_flow2 = self.c.status_flow_2
+        self.status_flow3 = self.c.status_flow_3
         self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
         self.resizable(width=False, height=False)
         self.title("Chart System")
@@ -31,7 +39,6 @@ class App(ctk.CTk):
         self.inputchannel_Two = None
         self.inputchannel_Three = None
         self.error_message_slider_entry = None
-        self.running = True
         self.controllers = []
         self.time = 0
         self.sensor_data = 0
@@ -48,7 +55,7 @@ class App(ctk.CTk):
 
     def loading(self):
         self.threat()
-        self.connection_bronkhorst()
+        self.connection()
         self.Topbar()
         self.load_text()
         self.Masterchart()
@@ -63,16 +70,17 @@ class App(ctk.CTk):
         self.connect_thread.start()
 
     def connection_saxon(self):
+        running = True
         try:
-            self.serial = serial.Serial("COM5", 19200, timeout=1)
-            while self.running:
+            self.serial = self.c.sensor
+            while running == True:
                 self.data_saxon()
         except serial.serialutil.SerialException as e:
             print("Error port not found", e)
-            self.running = False
+            running = False
         except IndexError as e:
-            print("Error sensor not found")
-            self.running = False
+            print("Error sensor not found", e)
+            running = False
 
     def data_saxon(self):
         try:
@@ -84,27 +92,23 @@ class App(ctk.CTk):
             time.sleep(0.5)
         except serial.serialutil.SerialException as e:
             print("Error port not found")
-            self.running = False
-    def connection_bronkhorst(self):
-        try:
-            self.flow1 = propar.instrument("COM3", channel=1)
-        except Exception:
-            print("Error flow 1 unable to connect")
-        else:
-            print("DOne")
+            running = False
+
+    def connection(self):
+        if self.status_flow1:
             self.controllers.append("1")
-        try:
-            self.flow2 = propar.instrument("COM2", channel=2)
-        except Exception:
-            print("Error flow 2 unable to connect")
         else:
-            self.controllers.append("2")
-        try:
-            self.flow3 = propar.instrument("COM1", channel=3)
-        except Exception:
-            print("Error flow 3 unable to connect")
-        else:
-            self.controllers.append("3")
+            print("Error flow 1 unable to connect")
+
+        # if self.status_flow2:
+        #     self.controllers.append("2")
+        # else:
+        #     print("Error flow 2 unable to connect")
+        #
+        # if self.status_flow3:
+        #     self.controllers.append("3")
+        # else:
+        #     print("Error flow 3 unable to connect")
 
         print(self.controllers)
 
@@ -132,7 +136,7 @@ class App(ctk.CTk):
             self.Menu_Config = ctk.CTkButton(self, text="Config", command=self.open_settings)
             self.Menu_Config.place(x=self.Place_Button_X, y=self.Place_Button_Y * 2)
             self.Menu_Script = ctk.CTkButton(self, text="Script", command=self.open_script)
-            # self.Menu_Script.place(x=self.Place_Button_X, y=self.Place_Button_Y*3)
+            self.Menu_Script.place(x=self.Place_Button_X, y=self.Place_Button_Y*3)
         else:
             self.Menu_Config.place_forget()
             self.Menu_Sliders.place_forget()
@@ -384,32 +388,43 @@ class App(ctk.CTk):
     def loop_per_sec(self):
         if self.status_start_stop:
             if "1" in self.controllers:
-                self.bronkhorst_data_1 = self.flow1.readParameter(8) / 32000 * 100
+                parameter_value_1 = self.flow1.readParameter(8)
+                self.test = self.c.sensor
+
+                print(parameter_value_1, " | ",self.sensor_data)
+                if parameter_value_1 is not None:
+                    self.bronkhorst_data_1 = parameter_value_1 / 32000 * 100
+                else:
+                    self.bronkhorst_data_1 = 0
             else:
                 self.bronkhorst_data_1 = 0
 
             if "2" in self.controllers:
-                self.bronkhorst_data_2 = self.flow2.readParameter(8) / 32000 * 100
+                parameter_value_2 = self.flow2.readParameter(8)
+                if parameter_value_2 is not None:
+                    self.bronkhorst_data_2 = parameter_value_2 / 32000 * 100
+                else:
+                    self.bronkhorst_data_2 = 0
             else:
                 self.bronkhorst_data_2 = 0
 
             if "3" in self.controllers:
-                self.bronkhorst_data_3 = self.flow3.readParameter(8) / 32000 * 100
+                parameter_value_3 = self.flow3.readParameter(8)
+                if parameter_value_3 is not None:
+                    self.bronkhorst_data_3 = parameter_value_3 / 32000 * 100
+                else:
+                    self.bronkhorst_data_3 = 0
             else:
                 self.bronkhorst_data_3 = 0
             self.write_excel()
         self.after(1000,self.loop_per_sec)
 
     def open_settings(self):
-        self.serial.close()
-        self.withdraw()
         app = ConfigurationApp()
         app.protocol("WM_DELETE_WINDOW", app.destroy)
         app.mainloop()
 
     def open_script(self):
-        self.serial.close()
-        self.withdraw()
         app = script.app()
         app.protocol("WM_DELETE_WINDOW", app.destroy)
         app.mainloop()
@@ -421,10 +436,8 @@ class App(ctk.CTk):
                 self.workbook.close()
         except Exception:
             pass
-        if hasattr(self, 'serial'):
-            self.serial.close()
         super().destroy()
-        restart = App()
+        restart = App(self.c)
         restart.mainloop()
 
     def destroy(self):
@@ -434,14 +447,8 @@ class App(ctk.CTk):
                 self.workbook.close()
         except Exception:
             pass
-        try:
-            self.serial.close()
-        except Exception:
-            pass
         print("Destroy")
         super().destroy()
-        app = main.MainApp()
-        app.mainloop()
 
 
 
@@ -525,7 +532,7 @@ class ConfigurationApp(ctk.CTk):
             self.config_new_value = name.get()
         except Exception:
             self.config_new_value = name
-        self.updated_text_row = f"{self.parameter_text_configname} {self.config_new_value}\n"
+        self.updated_text_row = f"{self.parameter_text_configname}: {self.config_new_value}\n"
         self.config_text_value[row - 1] = self.updated_text_row
         with open(self.config_file, "w") as write:
             write.writelines(self.config_text_value)

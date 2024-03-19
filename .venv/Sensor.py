@@ -6,11 +6,12 @@ import threading
 import time
 
 class App(ctk.CTk):
-    def __init__(self):
+    def __init__(self, con):
         super().__init__()
         self.title("PPM Meter")
         self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
         self.value = 0
+        self.c = con
         self.running = None
         self.command = b"\x02\x30\x35\x30\x30\x30\x37\x03"
         self.ppm_meter()
@@ -25,55 +26,50 @@ class App(ctk.CTk):
         self.connect_thread = threading.Thread(target=self.connection)
         self.connect_thread.daemon = True
         self.connect_thread.start()
+
     def connection(self):
-        try:
-            self.serial = serial.Serial("COM5", 19200, timeout=1)
+        self.status = self.c.status_sensor
+        if self.status == True:
+            self.serial = self.c.sensor
             self.ppm_meter_text.configure(text="Starting connection")
             self.running = True
-        except serial.serialutil.SerialException as e:
-            self.ppm_meter_text.configure(text=f"Error connecting to serial portt: {e}")
+        else:
+            self.ppm_meter_text.configure(text="No sensor was detected 1")
             self.running = False
 
-        except IndexError as e:
-            self.ppm_meter_text.configure(text="Sensor not detected")
-            self.running = False
         if self.running:
             self.sensor_data()
         else:
-            self.thread()
+            self.after(1000, self.thread)
 
     def sensor_data(self):
         try:
+            print(self.serial)
             self.serial.write(self.command)
             self.response = self.serial.read(1024).decode().split("   ")[5]
             self.ppm_meter_text.configure(text=self.response)
             self.update()
             time.sleep(0.5)
+        except _tkinter.TclError:
+            pass
         except Exception as e:
-            self.ppm_meter_text.configure(text=f"Error communicating with serial port: {e}")
+            print(e)
+            time.sleep(0.5)
+            self.ppm_meter_text.configure(text=f"No sensor was detected 2")
+            self.c.close_sensor()
+            self.c.initialize_sensor()
             self.running = False
             self.thread()
-        if self.running:
+
+        if self.running == True:
             try:
                 self.sensor_data()
             except Exception:
                 pass
 
-    def close_serial(self):
-        try:
-            self.serial.close()
-        except Exception:
-            pass
-        except serial.serialutil.PortNotOpenError:
-            pass
-
     def destroy(self):
-        try:
-            self.serial.close()
-        except Exception:
-            pass
         super().destroy()
-        main.MainApp().mainloop()
+        self.quit()
 
 if __name__ == '__main__':
     mainapp = App()
