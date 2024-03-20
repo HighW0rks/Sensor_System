@@ -564,8 +564,6 @@ class ConfigurationApp(ctk.CTk):
     def destroy(self):
         self.Close_Save()
         super().destroy()
-        app = App()
-        app.mainloop()
 
 
 if __name__ == '__main__':
