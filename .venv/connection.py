@@ -61,11 +61,15 @@ class Connection:
         try:
             self.sensor = serial.Serial("COM5", 19200, timeout=1)
             self.status_sensor = True
+        except PermissionError:
+            self.close_sensor()
+            self.initialize_sensor()
         except Exception as e:
             self.status_sensor = False
             print(f"Failed to initialize sensor: {e}")
             time.sleep(1)
-            self.initialize_sensor()
+            if self.sensor == None:
+                self.initialize_sensor()
 
     def close_sensor(self):
         if self.sensor is not None:

@@ -84,10 +84,8 @@ class App(ctk.CTk):
 
     def data_saxon(self):
         try:
-            self.serial.write(self.command)
-            self.response = self.serial.read(1024)
-            self.response_str = self.response.decode()
-            self.sensor_data = self.response_str.split("   ")[5]
+            with open("transfer.txt", "r") as read:
+                self.sensor_data = read.readlines(1)
             self.update()
             time.sleep(0.5)
         except serial.serialutil.SerialException as e:

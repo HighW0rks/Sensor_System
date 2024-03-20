@@ -46,7 +46,7 @@ class App(ctk.CTk):
         try:
             print(self.serial)
             self.serial.write(self.command)
-            self.response = self.serial.read(1024).decode().split("   ")[5]
+            self.response = self.serial.read(1024).decode().split()[5]
             self.ppm_meter_text.configure(text=self.response)
             self.update()
             time.sleep(0.5)
@@ -56,8 +56,6 @@ class App(ctk.CTk):
             print(e)
             time.sleep(0.5)
             self.ppm_meter_text.configure(text=f"No sensor was detected 2")
-            self.c.close_sensor()
-            self.c.initialize_sensor()
             self.running = False
             self.thread()
 
