@@ -1,7 +1,6 @@
 import customtkinter as ctk
 import tkinter as tk
 import Chart
-import Sensor
 import sys
 import main
 import propar
