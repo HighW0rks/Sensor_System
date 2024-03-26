@@ -2,3 +2,5 @@ Seconden: 10
 Stappen tussenin: 1
 Modes: False
 Folder: C:/Users/rijken.b/PycharmProjects/Sensor_System/.venv/Excel
+Sensor: COM5
+Flow: COM3

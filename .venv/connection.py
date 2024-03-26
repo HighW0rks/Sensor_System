@@ -1,7 +1,9 @@
+import main
 import propar
 import serial
 import time
 import threading
+import Chart
 
 class Connection:
     _instance = None
@@ -14,52 +16,34 @@ class Connection:
         return cls._instance
 
     def __init__(self):
-        self.status_flow_1 = None
-        self.status_flow_2 = None
-        self.status_flow_3 = None
+        self.status_flow = None
         self.status_sensor = None
         self.sensor = None
+        self.file_check()
         self.initialize_connections()
-
+    def file_check(self):
+        self.sensor_comport = Chart.ConfigurationApp().readfile_value(5)
+        self.flow_comport = Chart.ConfigurationApp().readfile_value(6)
     def initialize_connections(self):
-        threading.Thread(target=self.initialize_flow_1).start()
-        threading.Thread(target=self.initialize_flow_2).start()
-        threading.Thread(target=self.initialize_flow_3).start()
+        threading.Thread(target=self.initialize_flow).start()
         threading.Thread(target=self.initialize_sensor).start()
 
-    def initialize_flow_1(self):
+    def initialize_flow(self):
         try:
-            self.flow_1 = propar.instrument("COM3", channel=1)
-            self.status_flow_1 = True
+            self.flow_1 = propar.instrument(f"{self.flow_comport}", 5)
+            self.flow_2 = propar.instrument(f"{self.flow_comport}", 6)
+            self.flow_3 = propar.instrument(f"{self.flow_comport}", 7)
+            self.status_flow = True
         except Exception as e:
-            self.status_flow_1 = False
-            print(f"Failed to initialize flow_1: {e}")
+            self.status_flow = False
+            print(f"Failed to initialize flow controllers: {e}")
             time.sleep(1)
-            self.initialize_flow_1()
-
-    def initialize_flow_2(self):
-        try:
-            self.flow_2 = propar.instrument("COM3", channel=2)
-            self.status_flow_2 = True
-        except Exception as e:
-            self.status_flow_2 = False
-            print(f"Failed to initialize flow_2: {e}")
-            time.sleep(1)
-            self.initialize_flow_2()
-
-    def initialize_flow_3(self):
-        try:
-            self.flow_3 = propar.instrument("COM3", channel=3)
-            self.status_flow_3 = True
-        except Exception as e:
-            self.status_flow_3 = False
-            print(f"Failed to initialize flow_3: {e}")
-            time.sleep(1)
-            self.initialize_flow_3()
+            self.initialize_flow()
 
     def initialize_sensor(self):
         try:
-            self.sensor = serial.Serial("COM5", 19200, timeout=1)
+            self.sensor = serial.Serial(f"{self.sensor_comport}", 19200, timeout=1)
+            print("Sensor is connected")
             self.status_sensor = True
         except PermissionError:
             self.close_sensor()
