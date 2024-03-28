@@ -1,4 +1,5 @@
 import customtkinter as ctk
+import time
 
 class app(ctk.CTk):
 
@@ -12,6 +13,8 @@ class app(ctk.CTk):
         self.setpoint_value_entry_array = []
         self.channel_value_combobox_array = []
         self.entries = []
+        self.i = 0
+        self.x = 0
         self.test = 0
         self.load()
 
@@ -42,7 +45,7 @@ class app(ctk.CTk):
         print(len(self.entries))
         for self.i in range(len(self.entries)):
             if self.i < len(self.entries):
-                self.time_value = self.entries[self.i].split(", ")[0].split(".")[1].strip()
+                self.time_value = self.entries[self.i].split(", ")[0].strip()
                 self.setpoint_value = self.entries[self.i].split(", ")[1].strip()
                 self.combobox_value = self.entries[self.i].split(", ")[2].strip()
             else:
@@ -58,13 +61,14 @@ class app(ctk.CTk):
         self.add_entry_button.grid(row=1, column=0, pady=(0, 30))
 
     def new_entry(self):
-        self.i += 1
         self.Entry_add()
-        with open(fr"Sensor\Script {self.script_channel}.txt", "w") as write:
-            value = self.entries
-            value.append(f"{self.i-self.test}. 0, 0, 0\n")
-            write.writelines(value)
-        self.test = 0
+        with open(fr"Sensor\Script {self.script_channel}.txt", "r") as read:
+            read_value = read.readlines()
+            print(len(read_value))
+
+        with open(fr"Sensor\Script {self.script_channel}.txt", "a") as write:
+            line_number = len(read_value) + 1
+            write.write(f"{line_number}. 0, 0, 0\n")
 
     def Entry_add(self):
         self.time_entry = ctk.CTkEntry(self.scrollable_frame, width=60, height=30, justify="center")
@@ -85,39 +89,22 @@ class app(ctk.CTk):
         self.setpoint_value_entry.bind("<Return>", lambda event: self.update_script_file())
         self.scrollable_frame_entry.append(self.time_entry)
 
+
     def delete_row(self, index):
+        with open(fr"Sensor\Script {self.script_channel}.txt", "r") as file:
+            print(index)
+            self.value_entry = file.readlines()
+            print("Before: ",self.value_entry, " | ", self.x)
+            del self.value_entry[index-self.x]
+            print("After: ", self.value_entry)
+            self.x += 1
+        self.update_script_file(index)
 
-        del self.entries[index-self.test]
-        print(self.entries)
-
-        # Destroy widgets
-        self.time_entry_array[index-self.test].destroy()
-        self.setpoint_value_entry_array[index-self.test].destroy()
-        self.channel_value_combobox_array[index-self.test].destroy()
-        self.scrollable_frame.grid_slaves(row=index-self.test, column=1)[0].destroy()
-
-        # Remove entries from arrays
-        self.time_entry_array.pop(index-self.test)
-        self.setpoint_value_entry_array.pop(index-self.test)
-        self.channel_value_combobox_array.pop(index-self.test)
-
-        # Update indices and grid positions correctly
-        for i in range(index-self.test, len(self.time_entry_array)):
-            self.time_entry_array[i].grid(row=i)
-            self.setpoint_value_entry_array[i].grid(row=i)
-            self.channel_value_combobox_array[i].grid(row=i)
-            for btn in self.scrollable_frame.grid_slaves():
-                if btn.grid_info()["column"] == 1 and btn.grid_info()["row"] == i + 1:
-                    btn.grid(row=i)
-
-        self.update_script_file()
-        self.test += 1
-
-    def update_script_file(self):
-        for i in range(len(self.entries)):
-            self.entries[i] = f"{i + 1}. {self.time_entry_array[i].get()}, {self.setpoint_value_entry_array[i].get()}, {self.channel_value_combobox_array[i].get()}\n"
+    def update_script_file(self,index):
+        for widget in self.scrollable_frame.grid_slaves(row=index):
+            widget.destroy()
         with open(fr"Sensor\Script {self.script_channel}.txt", "w") as file:
-            file.writelines(self.entries)
+            file.writelines(self.value_entry)
 
     def reset_button(self):
         self.reset_button = ctk.CTkButton(self, text="Reset script", command=self.confirm_reset)
