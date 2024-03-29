@@ -12,7 +12,7 @@ import script
 import propar
 
 class App(ctk.CTk):
-    def __init__(self,con,sn):
+    def __init__(self,con,sn=None):
         super().__init__()
         print("Test")
         self.c = con
@@ -217,6 +217,7 @@ class App(ctk.CTk):
         self.Stop_Excel_button.grid(row=5, column=0, padx=30, pady=(10, 0))
         self.Start_Excel_button.grid(row=5, column=0, padx=30, pady=(10, 0))
         self.start_excel()
+
     def start_excel(self):
         Location = ConfigurationApp().readfile_value(4)
         self.get_time()

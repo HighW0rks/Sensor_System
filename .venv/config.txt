@@ -4,3 +4,5 @@ Modes: False
 Folder: C:/Users/rijken.b/PycharmProjects/Sensor_System/.venv/Excel
 Sensor: COM5
 Flow: COM3
+Channel: False
+

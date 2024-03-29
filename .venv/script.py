@@ -22,11 +22,9 @@ class app(ctk.CTk):
     def load(self):
         self.Scroll_Frame()
         self.file_check()
-        self.reset_button()
-
     def Scroll_Frame(self):
         self.scrollable_frame = ctk.CTkScrollableFrame(self, width=210, label_text="Script Config")
-        self.scrollable_frame.grid(row=0, column=0, padx=30, pady=30)
+        self.scrollable_frame.grid(row=0, column=0, columnspan=2, padx=30, pady=30)
         self.scrollable_frame_entry = []
 
     def file_check(self):
@@ -38,16 +36,16 @@ class app(ctk.CTk):
         except FileNotFoundError:
             with open(fr"Sensor\Script {self.script_channel}.txt", "a") as file:
                 for i in range(10):
-                    file.write(f"{i}. 0, 0, 0\n")
+                    file.write(f"{i}. 0; 0; 0\n")
                     self.Entry()
 
     def Entry(self):
         print(len(self.entries))
         for self.i in range(len(self.entries)):
             if self.i < len(self.entries):
-                self.time_value = self.entries[self.i].split(", ")[0].strip()
-                self.setpoint_value = self.entries[self.i].split(", ")[1].strip()
-                self.combobox_value = self.entries[self.i].split(", ")[2].strip()
+                self.time_value = self.entries[self.i].split("; ")[0].split(". ")[1].strip()
+                self.setpoint_value = self.entries[self.i].split("; ")[1].strip()
+                self.combobox_value = self.entries[self.i].split("; ")[2].strip()
             else:
                 self.time_value = ""
                 self.setpoint_value = ""
@@ -58,57 +56,59 @@ class app(ctk.CTk):
         self.combobox_value = ""
         self.i += 1
         self.add_entry_button = ctk.CTkButton(self, text="Add a new row", command= self.new_entry)
-        self.add_entry_button.grid(row=1, column=0, pady=(0, 30))
+        self.add_entry_button.grid(row=1, column=0, columnspan=2, pady=(0,5))
+        self.delete_button = ctk.CTkButton(self, text="Delete script", command=self.delete_script)
+        self.delete_button.grid(row=2, column=0, pady=(0,5))
+        self.reset_button = ctk.CTkButton(self, text="Reset script", command=self.confirm_reset)
+        self.reset_button.grid(row=2, column=1, pady=(0,5))
 
     def new_entry(self):
         self.Entry_add()
         with open(fr"Sensor\Script {self.script_channel}.txt", "r") as read:
             read_value = read.readlines()
-            print(len(read_value))
-
         with open(fr"Sensor\Script {self.script_channel}.txt", "a") as write:
             line_number = len(read_value) + 1
-            write.write(f"{line_number}. 0, 0, 0\n")
+            write.write(f"{line_number}. 0; 0; 0\n")
+        self.i += 1
 
     def Entry_add(self):
         self.time_entry = ctk.CTkEntry(self.scrollable_frame, width=60, height=30, justify="center")
-        self.time_entry.grid(row=self.i, column=2)
+        self.time_entry.grid(row=self.i, column=1)
         self.time_entry.insert(0, self.time_value)
         self.time_entry_array.append(self.time_entry)
         self.setpoint_value_entry = ctk.CTkEntry(self.scrollable_frame, width=60, height=30, justify="center")
-        self.setpoint_value_entry.grid(row=self.i, column=3)
+        self.setpoint_value_entry.grid(row=self.i, column=2)
         self.setpoint_value_entry.insert(0, self.setpoint_value)
         self.setpoint_value_entry_array.append(self.setpoint_value_entry)
         self.channel_value_combobox = ctk.CTkComboBox(self.scrollable_frame, width=60, height=30, justify="center", values=["1","2","3","All"], command= lambda event: self.update_script_file())
-        self.channel_value_combobox.grid(row=self.i, column=4)
+        self.channel_value_combobox.grid(row=self.i, column=3)
         self.channel_value_combobox.set(self.combobox_value)
         self.channel_value_combobox_array.append(self.channel_value_combobox)
-        self.delete_button = ctk.CTkButton(self.scrollable_frame, text="X", width=27,command=lambda row=self.i: self.delete_row(row), fg_color="red")
-        self.delete_button.grid(row=self.i, column=1)
         self.time_entry.bind("<Return>", lambda event: self.update_script_file())
         self.setpoint_value_entry.bind("<Return>", lambda event: self.update_script_file())
         self.scrollable_frame_entry.append(self.time_entry)
 
-
-    def delete_row(self, index):
+    def update_script_file(self):
         with open(fr"Sensor\Script {self.script_channel}.txt", "r") as file:
-            print(index)
-            self.value_entry = file.readlines()
-            print("Before: ",self.value_entry, " | ", self.x)
-            del self.value_entry[index-self.x]
-            print("After: ", self.value_entry)
-            self.x += 1
-        self.update_script_file(index)
-
-    def update_script_file(self,index):
-        for widget in self.scrollable_frame.grid_slaves(row=index):
-            widget.destroy()
+            lines = file.readlines()
+        for i in range(len(lines)):
+            lines[i] = f"{i + 1}. {self.time_entry_array[i].get()}; {self.setpoint_value_entry_array[i].get()}; {self.channel_value_combobox_array[i].get()}\n"
         with open(fr"Sensor\Script {self.script_channel}.txt", "w") as file:
-            file.writelines(self.value_entry)
+            file.writelines(lines)
 
-    def reset_button(self):
-        self.reset_button = ctk.CTkButton(self, text="Reset script", command=self.confirm_reset)
-        self.reset_button.grid(row=2, column=0, pady=(0,30))
+    def delete_script(self):
+        with open(fr"Sensor\Script {self.script_channel}.txt", "r") as file:
+            lines = file.readlines()
+            print("Len: ",len(lines))
+        for index in range(10000):
+            for widget in self.scrollable_frame.grid_slaves(row=index):
+                print("Index: ",index)
+                widget.destroy()
+        with open(fr"Sensor\Script {self.script_channel}.txt", "w") as write:
+            write.truncate()
+        self.time_entry_array = []
+        self.setpoint_value_entry_array = []
+        self.channel_value_combobox_array = []
 
     def confirm_reset(self):
         confirm_dialog = Confirm(self)
