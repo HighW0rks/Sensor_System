@@ -39,6 +39,7 @@ class App(ctk.CTk):
         self.inputchannel_Two = None
         self.inputchannel_Three = None
         self.error_message_slider_entry = None
+        self.channel_option = None
         self.time = 0
         self.start_time = 0
         self.duration = 0
@@ -117,23 +118,48 @@ class App(ctk.CTk):
             self.Menu_Sliders.place(x=self.Place_Button_X, y=self.Place_Button_Y)
             self.Menu_Config = ctk.CTkButton(self, text="Config", command=self.open_settings)
             self.Menu_Config.place(x=self.Place_Button_X, y=self.Place_Button_Y * 2)
-            self.Menu_Script = ctk.CTkButton(self, text="Script", command=self.script)
+            self.Menu_Script = ctk.CTkButton(self, text="Script", command=self.set_sensor)
             self.Menu_Script.place(x=self.Place_Button_X, y=self.Place_Button_Y*3)
         else:
             self.Menu_Config.place_forget()
             self.Menu_Sliders.place_forget()
             self.Menu_Script.place_forget()
             try:
-                self.Script_ComboBox.place_forget()
+                self.select_type_sensor.destroy()
+                self.channel_option.destroy()
             except Exception:
                 pass
         self.Menu_Two_Show = not self.Menu_Two_Show
 
-    def script(self):
+    def set_sensor(self):
         self.Menu_Script.place_forget()
-        self.Script_ComboBox = ctk.CTkComboBox(self, values=["Ch1","Ch2","Ch3","Ch4","Ch6"], justify="center", command= lambda event: self.open_script())
-        self.Script_ComboBox.place(x=self.Place_Button_X, y=self.Place_Button_Y * 3)
-        self.Script_ComboBox.set("Select a channel")
+        self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center", command=self.set_channel)
+        self.select_type_sensor.place(x=self.Place_Button_X, y=self.Place_Button_Y * 3)
+        self.select_type_sensor.set("Select a sensor")
+
+    def set_channel(self, event=None):
+        self.type_sensor = self.select_type_sensor.get()
+        self.select_type_sensor.destroy()
+        if self.type_sensor == "V153":
+            channel_values = ["Ch1", "Ch2", "Ch3"]
+            self.sensor_artikel = "2SN100224"
+
+        elif self.type_sensor == "V176":
+            channel_values = ["Ch1", "Ch2", "Ch3", "Ch4", "Ch6"]
+            self.sensor_artikel = "2SN1001073"
+
+        else:
+            channel_values = ["Ch1", "Ch2", "Ch3", "Ch4", "Ch6"]
+            self.sensor_artikel = "2SN1001098"
+
+
+        if self.channel_option is not None:
+            self.channel_option.destroy()
+
+        # Create a new channel_option ComboBox with updated values
+        self.channel_option = ctk.CTkComboBox(self, values=channel_values, justify="center", command= lambda event: self.open_script())
+        self.channel_option.place(x=self.Place_Button_X, y=self.Place_Button_Y * 3)
+        self.channel_option.set("Select a channel")
 
     def Topbar_Sliders(self):
         if self.Menu_Two_Slider:
@@ -399,8 +425,10 @@ class App(ctk.CTk):
         app.mainloop()
 
     def open_script(self):
-        Channel = self.Script_ComboBox.get()
-        app = script.app(Channel)
+        app = script.app(self.sensor_artikel, self.channel_option.get())
+        self.select_type_sensor.destroy()
+        self.channel_option.destroy()
+        self.Menu_Script.place(x=self.Place_Button_X, y=self.Place_Button_Y * 3)
         app.protocol("WM_DELETE_WINDOW", app.destroy)
         app.mainloop()
 

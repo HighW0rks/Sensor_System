@@ -5,6 +5,7 @@ import time
 import threading
 import Chart
 
+
 class Connection:
     _instance = None
     _lock = threading.Lock()
@@ -19,11 +20,14 @@ class Connection:
         self.status_flow = None
         self.status_sensor = None
         self.sensor = None
+        self.last_error_time = None
         self.file_check()
         self.initialize_connections()
+
     def file_check(self):
         self.sensor_comport = Chart.ConfigurationApp().readfile_value(5)
         self.flow_comport = Chart.ConfigurationApp().readfile_value(6)
+
     def initialize_connections(self):
         threading.Thread(target=self.initialize_flow).start()
         threading.Thread(target=self.initialize_sensor).start()
@@ -49,10 +53,12 @@ class Connection:
             self.close_sensor()
             self.initialize_sensor()
         except Exception as e:
-            self.status_sensor = False
-            print(f"Failed to initialize sensor: {e}")
+            if self.last_error_time is None or time.time() - self.last_error_time > 1:
+                self.status_sensor = False
+                print(f"Failed to initialize sensor: {e}")
+                self.last_error_time = time.time()
             time.sleep(1)
-            if self.sensor == None:
+            if self.sensor is None:
                 self.initialize_sensor()
 
     def close_sensor(self):

@@ -1,27 +1,30 @@
 import customtkinter as ctk
 import time
+import Chart
 
 class app(ctk.CTk):
 
-    def __init__(self, channel):
+    def __init__(self, artikel, channel):
         super().__init__()
         self.title(channel)
         self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
         self.resizable(width=False, height=False)
         self.time_entry_array = []
+        self.sensor_type = artikel
         self.script_channel = channel
         self.setpoint_value_entry_array = []
         self.channel_value_combobox_array = []
+        self.folder = Chart.ConfigurationApp().readfile_value(4)
         self.entries = []
         self.i = 0
         self.x = 0
         self.test = 0
         self.load()
 
-
     def load(self):
         self.Scroll_Frame()
         self.file_check()
+
     def Scroll_Frame(self):
         self.scrollable_frame = ctk.CTkScrollableFrame(self, width=210, label_text="Script Config")
         self.scrollable_frame.grid(row=0, column=0, columnspan=2, padx=30, pady=30)
@@ -29,12 +32,12 @@ class app(ctk.CTk):
 
     def file_check(self):
         try:
-            with open(fr"Sensor\Script {self.script_channel}.txt", "r") as file:
+            with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "r") as file:
                 self.entries = file.readlines()
                 self.entries = [line.strip() for line in self.entries if line.strip()]
                 self.Entry()
         except FileNotFoundError:
-            with open(fr"Sensor\Script {self.script_channel}.txt", "a") as file:
+            with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "a") as file:
                 for i in range(10):
                     file.write(f"{i}. 0; 0; 0\n")
                     self.Entry()
@@ -64,9 +67,9 @@ class app(ctk.CTk):
 
     def new_entry(self):
         self.Entry_add()
-        with open(fr"Sensor\Script {self.script_channel}.txt", "r") as read:
+        with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "r") as read:
             read_value = read.readlines()
-        with open(fr"Sensor\Script {self.script_channel}.txt", "a") as write:
+        with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "a") as write:
             line_number = len(read_value) + 1
             write.write(f"{line_number}. 0; 0; 0\n")
         self.i += 1
@@ -89,22 +92,22 @@ class app(ctk.CTk):
         self.scrollable_frame_entry.append(self.time_entry)
 
     def update_script_file(self):
-        with open(fr"Sensor\Script {self.script_channel}.txt", "r") as file:
+        with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "r") as file:
             lines = file.readlines()
         for i in range(len(lines)):
             lines[i] = f"{i + 1}. {self.time_entry_array[i].get()}; {self.setpoint_value_entry_array[i].get()}; {self.channel_value_combobox_array[i].get()}\n"
-        with open(fr"Sensor\Script {self.script_channel}.txt", "w") as file:
+        with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "w") as file:
             file.writelines(lines)
 
     def delete_script(self):
-        with open(fr"Sensor\Script {self.script_channel}.txt", "r") as file:
+        with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "r") as file:
             lines = file.readlines()
             print("Len: ",len(lines))
         for index in range(10000):
             for widget in self.scrollable_frame.grid_slaves(row=index):
                 print("Index: ",index)
                 widget.destroy()
-        with open(fr"Sensor\Script {self.script_channel}.txt", "w") as write:
+        with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "w") as write:
             write.truncate()
         self.time_entry_array = []
         self.setpoint_value_entry_array = []
@@ -117,7 +120,7 @@ class app(ctk.CTk):
     def reset_script(self):
         with open("default_script.txt","r") as read:
             default = read.readlines()
-        with open(fr"Sensor\Script {self.script_channel}.txt","w") as write:
+        with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt","w") as write:
             write.writelines(default)
         self.file_check()
 

@@ -4,16 +4,16 @@ import tkinter.ttk as ttk
 import Chart
 import sys
 import os
+import shutil
 import serial.tools.list_ports
 import serial
 import main
 import propar
-import subprocess
 import threading
 import time
 from connection import Connection
 import psutil
-import xlsxwriter
+import openpyxl
 import datetime
 
 def terminate_existing_main_processes():
@@ -57,6 +57,7 @@ class MainApp(ctk.CTk):
         self.status_flow_var = tk.IntVar(value=0)
         self.main_run = True
         self.running = True
+        self.program_run = True
         self.serienummer = "Unknown"
         self.connection = con
         self.serial = self.connection.sensor
@@ -64,6 +65,7 @@ class MainApp(ctk.CTk):
         self.flow_status = 0
         self.time = 0
         self.row_value = 0
+        self.channel_option = None
         self.background_color()
         self.loading()
         self.protocol("WM_DELETE_WINDOW", self.close_app)
@@ -85,18 +87,19 @@ class MainApp(ctk.CTk):
         self.sensor_info()
         self.buttons()
         self.thread()
+        self.set_sensor()
         self.ppm_meter()
         self.zero_point()
 
     def frame(self):
         self.frame_button = ctk.CTkFrame(self)
-        self.frame_button.grid(row=0, column=0, padx=(20, 0), pady=(20, 20), sticky="n")
+        self.frame_button.grid(row=0, column=0, padx=(15, 0), pady=(20, 20), sticky="n")
         self.frame_status = ctk.CTkFrame(self)
         self.frame_status.grid(row=0, column=1, padx=(66, 0),pady=(20, 0), sticky="n")
         self.frame_ppm = ctk.CTkFrame(self)
         self.frame_ppm.grid(row=1, column=1, padx=(66,0), sticky="n")
         self.frame_zero_point = ctk.CTkFrame(self)
-        self.frame_zero_point.grid(row=1, column=0, padx=(20, 0))
+        self.frame_zero_point.grid(row=1, column=0, padx=(15, 0))
         self.information_title = ctk.CTkFrame(self)
         self.information_title.grid(row=2, column=0, columnspan=2,sticky="n",padx=(20,0),pady=(20,10))
         self.information_tab = ctk.CTkFrame(self)
@@ -118,10 +121,8 @@ class MainApp(ctk.CTk):
         self.config_button = ctk.CTkButton(master=self.frame_button, text="Config", command=self.open_config)
         self.config_button.grid(row=2,column=0, pady=(0,15))
         self.start_button = ctk.CTkButton(self, text="Start", width=300, height=100, command=self.start_program)
-        self.start_button.grid(row=5, column=0, columnspan=2, padx=(20,0),pady=(10,20), sticky="nsew")
-        self.channel_option = ctk.CTkComboBox(self, values=["Ch1", "Ch2", "Ch3", "Ch4", "Ch6"])
-        self.channel_option.grid(row=4, column=0, columnspan=2, padx=(20,0), pady=(20,0))
-        self.channel_option.set("Select a channel")
+        self.start_button.grid(row=6, column=0, columnspan=2, padx=(20,0),pady=(10,20), sticky="nsew")
+        self.stop_button = ctk.CTkButton(self, text="Stop", width=300, height=100, command= lambda: self.start_stop(1))
 
     def status_info(self):
         self.empty_status = ctk.CTkLabel(master=self.frame_status, text="",height=0).grid(row=0,column=0,padx=100)
@@ -140,6 +141,9 @@ class MainApp(ctk.CTk):
                 self.serienummer = str(read.decode()[5:13])
                 if len(read) == 0 or len(read) > 24 :
                     self.serienummer = "Unknown"
+                self.connection.sensor.write(b"\x02\x36\x38\x30\x30\x30\x63\x03")
+                read = self.connection.sensor.read(1024)
+                self.sensor_version = str(read.decode()[61:81])
             except Exception as e:
                 print(e)
                 pass
@@ -149,6 +153,37 @@ class MainApp(ctk.CTk):
         title.grid(row=0, column=0, padx=80, pady=5)
         self.version = ctk.CTkLabel(master=self.information_tab, text=f"Serie Nummer\n{self.serienummer}")
         self.version.grid(row=0, column=0,padx=20,pady=10)
+
+    def set_sensor(self):
+        self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center", command=self.set_channel)
+        self.select_type_sensor.grid(row=4, column=0, columnspan=2, padx=(20,0), pady=(20,0))
+        self.select_type_sensor.set("Select a sensor")
+
+    def set_channel(self, event=None):
+        self.type_sensor = self.select_type_sensor.get()
+        if self.type_sensor == "V153":
+            channel_values = ["Ch1", "Ch2", "Ch3"]
+            self.folder_location = "2SN100224"
+            self.excel_file = "425 --- test Data QC 2SN100224.xlsx"
+
+        elif self.type_sensor == "V176":
+            channel_values = ["Ch1", "Ch2", "Ch3", "Ch4", "Ch6"]
+            self.folder_location = "2SN1001073"
+            self.excel_file = "425 --- test Data QC 2SN1001073.xlsx"
+
+        else:
+            channel_values = ["Ch1", "Ch2", "Ch3", "Ch4", "Ch6"]
+            self.folder_location = "2SN1001098"
+            self.excel_file = "425 --- test Data QC 2SN1001098 Goud.xlsx"
+
+        # Destroy the existing channel_option if it exists
+        if self.channel_option is not None:
+            self.channel_option.destroy()
+
+        # Create a new channel_option ComboBox with updated values
+        self.channel_option = ctk.CTkComboBox(self, values=channel_values, justify="center")
+        self.channel_option.grid(row=5, column=0, columnspan=2, padx=(20, 0), pady=(20, 0))
+        self.channel_option.set("Select a channel")
 
     def sensor_thread(self):
         self.sensor_info_con()
@@ -187,7 +222,9 @@ class MainApp(ctk.CTk):
                 print(f"Error in sensor communication: {e}")
                 self.version.configure(text="Serie Nummer\nUnknown")
                 self.ppm_meter_label.configure(text="Sensor not found")
-                # self.connection.initialize_sensor()
+                time.sleep(1)
+                self.connection.initialize_sensor()
+                self.serial = self.connection.sensor
                 x = True
                 pass
 
@@ -213,10 +250,13 @@ class MainApp(ctk.CTk):
     def status_update(self):
         self.status_sensor_var.set(self.sensor_status)
         self.status_flow_var.set(self.flow_status)
-        if self.sensor_status and self.flow_status and self.channel_option.get() != "Select a channel":
-            self.start_button.configure(state="normal")
-        else:
-            self.start_button.configure(state="disabled")
+        try:
+            if self.sensor_status and self.flow_status and self.channel_option.get() != "Select a channel":
+                self.start_button.configure(state="normal")
+            else:
+                self.start_button.configure(state="disabled")
+        except Exception:
+            pass
 
         if self.sensor_status:
             self.zero_point_button.configure(state="normal")
@@ -242,25 +282,74 @@ class MainApp(ctk.CTk):
         self.main_run = True
 
     def start_program(self):
+        self.start_stop(0)
+        self.row_value = 0
+        self.folder = Chart.ConfigurationApp().readfile_value(4)
         self.channel = self.channel_option.get()
         self.start_excel()
         self.read_script_thread()
 
     def start_excel(self):
-        Location = Chart.ConfigurationApp().readfile_value(4)
-        self.get_time()
-        self.workbook = xlsxwriter.Workbook(fr"{Location}\{self.serienummer}-{self.current_time}.xlsx")
-        self.worksheet = self.workbook.add_worksheet()
-        self.worksheet.write(0, 0, 'Time')
-        self.worksheet.set_column('A:A', 20)
-        self.worksheet.write(0, 1, 'Channel 1')
-        self.worksheet.write(0, 2, 'Channel 2')
-        self.worksheet.write(0, 3, 'Channel 3')
-        self.worksheet.write(0, 4, 'Channel 4')
-        self.worksheet.write(0, 5, 'PPM Value')
-        self.worksheet.write(0, 6, 'Channel 6')
-        self.worksheet.write(0, 7, 'Temperature')
-        self.worksheet.write(0, 8, 'Air Pressure')
+        self.excel_row = 2
+        self.Location = Chart.ConfigurationApp().readfile_value(4)
+        self.workbook = openpyxl.load_workbook(fr"{self.folder}/{self.folder_location}/{self.excel_file}")
+        self.worksheet = self.workbook["Sheet1"]
+        self.worksheet['E2'] = self.serienummer
+        self.worksheet['E4'] = self.sensor_version
+        self.worksheet['J3'] = datetime.datetime.now().strftime("%Y-%m-%d")
+
+        if self.channel == "Ch1":
+            self.worksheet = self.workbook["Ch.1 2-60%"]
+            first = 180
+            last = 200
+            for i in range(16):
+                self.worksheet[f'L{i + 14}'] = f"=AVERAGE(F{first}:F{last})"
+                first += 100
+                last += 100
+        elif self.channel == "Ch2":
+            self.worksheet = self.workbook["Ch.2 500-20000 2%"]
+            first = 80
+            last = 100
+            for i in range(21):
+                self.worksheet[f'L{i + 14}'] = f"=AVERAGE(F{first}:F{last})"
+                first += 100
+                last += 100
+        elif self.channel == "Ch3":
+            self.worksheet = self.workbook["Ch.3 0-1000 2%"]
+            first = 80
+            last = 100
+            for i in range(12):
+                self.worksheet[f'L{i + 14}'] = f"=AVERAGE(F{first}:F{last})"
+                first += 100
+                last += 100
+        elif self.channel == "Ch4":
+            self.worksheet = self.workbook["Ch.4 500-20000 2%"]
+            first = 80
+            last = 100
+            for i in range(21):
+                self.worksheet[f'L{i + 14}'] = f"=AVERAGE(F{first}:F{last})"
+                first += 100
+                last += 100
+        elif self.channel == "Ch6":
+            self.worksheet = self.workbook["Ch.6 0-20%"]
+            first = 80
+            last = 100
+            for i in range(11):
+                self.worksheet[f'L{i + 14}'] = f"=AVERAGE(F{first}:F{last})"
+                first += 100
+                last += 100
+
+        self.worksheet['A1'] = 'Time'
+        self.worksheet['B1'] = 'Channel 1'
+        self.worksheet['C1'] = 'Channel 2'
+        self.worksheet['D1'] = 'Channel 3'
+        self.worksheet['E1'] = 'Channel 4'
+        self.worksheet['F1'] = 'Auto channel'
+        self.worksheet['G1'] = 'Channel 6'
+        self.worksheet['H1'] = 'Temperature'
+        self.worksheet['I1'] = 'Air Pressure'
+        for col in range(1, 10):
+            self.worksheet.cell(row=1, column=col)
         self.write_excel_thread()
 
     def write_excel_thread(self):
@@ -275,60 +364,80 @@ class MainApp(ctk.CTk):
 
     def write_excel(self):
         while self.running:
-            self.time += 1
-            sensor = float(self.ppm_value)
-
             self.get_time()
-            self.worksheet.write(self.time, 0, self.current_time)
-            self.worksheet.write(self.time, 1, self.channel_1)
-            self.worksheet.write(self.time, 2, self.channel_2)
-            self.worksheet.write(self.time, 3, self.channel_3)
-            self.worksheet.write(self.time, 4, self.channel_4)
-            self.worksheet.write(self.time, 5, sensor)
-            self.worksheet.write(self.time, 6, self.channel_6)
-            self.worksheet.write(self.time, 7, self.temperature)
-            self.worksheet.write(self.time, 8, self.air_pressure)
+            self.worksheet[f'A{self.excel_row}'] = self.current_time
+            self.worksheet[f'B{self.excel_row}'] = self.channel_1
+            self.worksheet[f'C{self.excel_row}'] = self.channel_2
+            self.worksheet[f'D{self.excel_row}'] = self.channel_3
+            self.worksheet[f'E{self.excel_row}'] = self.channel_4
+            self.worksheet[f'F{self.excel_row}'] = float(self.ppm_value)
+            self.worksheet[f'G{self.excel_row}'] = self.channel_6
+            self.worksheet[f'H{self.excel_row}'] = self.temperature
+            self.worksheet[f'I{self.excel_row}'] = self.air_pressure
+
+            self.excel_row += 1
             time.sleep(1)
+
 
     def get_time(self):
         self.current_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        self.day_time = datetime.datetime.now().strftime("%Y-%m-%d")
 
     def read_script(self):
-        try:
-            with open(fr"Sensor\Script {self.channel}.txt", "r") as read:
+        if self.running == True:
+            with open(fr"{self.folder}/{self.folder_location}/Scripts/Script {self.channel}.txt", "r") as read:
                 read_value = read.readlines()
                 if not self.row_value < len(read_value):
                     print("End of file reached")
                     self.running = False
-                    self.workbook.close()
+                    self.get_time()
+                    if not os.path.exists(f"{self.folder}/{self.folder_location}/{self.serienummer}"):
+                        os.mkdir(f"{self.folder}/{self.folder_location}/{self.serienummer}")
+                    self.workbook.save(f"{self.folder}/{self.folder_location}/{self.serienummer}/{self.channel}_{self.current_time}.xlsx")
+                    self.start_stop(1)
                     return
-                self.seconde_value = read_value[self.row_value].split(". ")[1].split("; ")[0].strip()
-                self.percentage_value = read_value[self.row_value].split("; ")[1].strip()
-                self.channel_value = read_value[self.row_value].split("; ")[2].strip()
-            print(f"Sec: {self.seconde_value}  | Flow: ", "{:.0f}".format(float(self.percentage_value) * 32000 / 100),
-                  f" | Channel: {self.channel_value}")
-            self.set_value()
-        except Exception as e:
-            print(e)
-            pass
+                else:
+                    self.seconde_value = read_value[self.row_value].split(". ")[1].split("; ")[0].strip()
+                    self.percentage_value = read_value[self.row_value].split("; ")[1].strip()
+                    self.channel_value = read_value[self.row_value].split("; ")[2].strip()
+                    print(f"Sec: {self.seconde_value}  | Flow: ", "{:.0f}".format(float(self.percentage_value) * 32000 / 100),f" | Channel: {self.channel_value}")
+                    self.set_value()
+            # except Exception as e:
+            #     print(e)
+            #     pass
+        else:
+            print("Excel has been writen")
+
 
     def set_value(self):
-        if self.channel_value == "1":
-            self.connection.flow_1.writeParameter(9, "{:.0f}".format(float(self.percentage_value) * 32000 / 100))
-            self.row_value += 1
-            time.sleep(float(self.seconde_value))
-            self.read_script()
-        if self.channel_value == "2":
-            self.connection.flow_2.writeParameter(9, "{:.0f}".format(float(self.percentage_value) * 32000 / 100))
-            self.row_value += 1
-            time.sleep(float(self.seconde_value))
-            self.read_script()
-        else:
-            self.connection.flow_3.writeParameter(9, "{:.0f}".format(float(self.percentage_value) * 32000 / 100))
-            self.row_value += 1
-            time.sleep(float(self.seconde_value))
-            self.read_script()
+        try:
+            if self.running:
+                if self.channel_value == "1":
+                    self.connection.flow_1.writeParameter(9, "{:.0f}".format(float(self.percentage_value) * 32000 / 100))
+                    self.row_value += 1
+                    time.sleep(float(self.seconde_value))
+                    self.read_script()
+                if self.channel_value == "2":
+                    self.connection.flow_2.writeParameter(9, "{:.0f}".format(float(self.percentage_value) * 32000 / 100))
+                    self.row_value += 1
+                    time.sleep(float(self.seconde_value))
+                    self.read_script()
+                else:
+                    self.connection.flow_3.writeParameter(9, "{:.0f}".format(float(self.percentage_value) * 32000 / 100))
+                    self.row_value += 1
+                    time.sleep(float(self.seconde_value))
+                    self.read_script()
+        except Exception:
+            pass
+
+    def start_stop(self, x):
+        if x == 0:
+            self.stop_button.grid(row=6, column=0, columnspan=2, padx=(20,0), pady=(10,20), sticky="nsew")
+            self.start_button.grid_forget()
+            self.running = True
+        if x == 1:
+            self.start_button.grid(row=6, column=0, columnspan=2, padx=(20,0), pady=(10,20), sticky="nsew")
+            self.stop_button.grid_forget()
+            self.running = False
 
     def open_chart(self):
         # self.main_run = False
@@ -360,24 +469,34 @@ class Configuration(ctk.CTk):
         self.comport_sensor = None
         self.comport_flow = None
         self.channel_switch_var = False
+        self.frame()
         self.combobox()
         self.button_switch()
         self.text()
+        self.directory()
+
+    def frame(self):
+        self.frame_comport = ctk.CTkFrame(self)
+        self.frame_comport.grid(row=0, column=0, columnspan=2)
+        self.frame_switch = ctk.CTkFrame(self)
+        self.frame_switch.grid(row=1, column=0, pady=(10,0))
+        self.frame_folder = ctk.CTkFrame(self)
+        self.frame_folder.grid(row=1, column=1)
 
     def listen_comport(self):
         return serial.tools.list_ports.comports()
 
     def text(self):
-        label_sensor = ctk.CTkLabel(self, text="Sensor").grid(row=0, column=1)
-        label_flow = ctk.CTkLabel(self, text="Flow Controller").grid(row=0,column=0)
+        label_sensor = ctk.CTkLabel(master=self.frame_comport, text="Sensor").grid(row=0, column=1)
+        label_flow = ctk.CTkLabel(master=self.frame_comport, text="Flow Controller").grid(row=0,column=0)
         button_exit = ctk.CTkButton(self, text="Save & Restart App", command=self.restart_app).grid(row=4, column=0, columnspan=2, pady=(30,0))
 
     def combobox(self):
-        self.flow_com = ttk.Combobox(self, width=25, values=self.listen_comport(),font=(15))
+        self.flow_com = ttk.Combobox(master=self.frame_comport, width=25, values=self.listen_comport(),font=(15))
         self.flow_com.grid(row=1, column=0)
         self.flow_com.set("Select a comport")
         self.flow_com.configure(font=(20))
-        self.sensor_com = ttk.Combobox(self, width=25, values=self.listen_comport(), font=(15))
+        self.sensor_com = ttk.Combobox(master=self.frame_comport, width=25, values=self.listen_comport(), font=(15))
         self.flow_com.bind('<<ComboboxSelected>>', self.get_flow)
         self.sensor_com.grid(row=1,column=1)
         self.sensor_com.set("Select a comport")
@@ -405,15 +524,14 @@ class Configuration(ctk.CTk):
             self.modes_bool = str(self.read[2].split(": ")[1].split("\n")[0])
             dark_mode_state = ctk.BooleanVar(value=(self.modes_bool == "True"))
             print(dark_mode_state)
-        self.dark_white_mode = ctk.CTkSwitch(self, text="Dark/Light mode", variable=dark_mode_state, command= self.set_dark_light_mode)
+        self.dark_white_mode = ctk.CTkSwitch(master=self.frame_switch, text="Dark/Light mode", variable=dark_mode_state, command= self.set_dark_light_mode)
         self.dark_white_mode.grid(row=2, column=0, columnspan=2, padx=20, pady=20)
         with open("config.txt", "r") as r:
             self.read = r.readlines()
             self.modes_bool = str(self.read[6].split(": ")[1].split("\n")[0])
             self.channel_mode_state = ctk.BooleanVar(value=(self.modes_bool == "True"))
-        channel_text = ctk.CTkLabel(self, text="K1/K2/K3    K4/K6").place(x=188, y=110)
-        self.channel_switch = ctk.CTkSwitch(self, text="", variable=self.channel_mode_state, command=self.channel)
-        self.channel_switch.grid(row=3, column=0, columnspan=2, padx=(80,20), pady=20)
+        self.channel_switch = ctk.CTkSwitch(master=self.frame_switch, text="K1/K2/K3 | K4/K6", variable=self.channel_mode_state, command=self.channel)
+        self.channel_switch.grid(row=3, column=0, columnspan=2, pady=(0,20))
 
     def set_dark_light_mode(self):
         with open("config.txt","r") as r:
@@ -441,6 +559,13 @@ class Configuration(ctk.CTk):
         with open("config.txt", "w") as w:
             self.read[6] = f"Channel: {value}\n"
             w.writelines(self.read)
+
+    def directory(self):
+        ctk.CTkButton(master=self.frame_folder, text="Select the main folder", command=self.folder_location).grid(row=0, column=0)
+
+    def folder_location(self):
+        self.Folder_Location = tk.filedialog.askdirectory()
+        Chart.ConfigurationApp().text_config(4,self.Folder_Location)
 
     def restart(self):
         main.MainApp.background_color(ctk.CTk)
