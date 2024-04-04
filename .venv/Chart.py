@@ -32,13 +32,10 @@ class App(ctk.CTk):
         self.Menu_Two_Slider = True
         self.Place_Button_Y = 28
         self.Place_Button_X = 140
-        self.sliderchannel_One = None
-        self.sliderchannel_Two = None
-        self.sliderchannel_Three = None
-        self.inputchannel_One = None
-        self.inputchannel_Two = None
-        self.inputchannel_Three = None
-        self.error_message_slider_entry = None
+        self.sliders_var = []
+        self.input_var = []
+        self.arrow_up = []
+        self.arrow_down = []
         self.channel_option = None
         self.time = 0
         self.start_time = 0
@@ -131,6 +128,7 @@ class App(ctk.CTk):
                 pass
         self.Menu_Two_Show = not self.Menu_Two_Show
 
+
     def set_sensor(self):
         self.Menu_Script.place_forget()
         self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center", command=self.set_channel)
@@ -156,24 +154,9 @@ class App(ctk.CTk):
         if self.channel_option is not None:
             self.channel_option.destroy()
 
-        # Create a new channel_option ComboBox with updated values
         self.channel_option = ctk.CTkComboBox(self, values=channel_values, justify="center", command= lambda event: self.open_script())
         self.channel_option.place(x=self.Place_Button_X, y=self.Place_Button_Y * 3)
         self.channel_option.set("Select a channel")
-
-    def Topbar_Sliders(self):
-        if self.Menu_Two_Slider:
-            self.Sliders()
-        else:
-            self.sliderchannel_One.grid_forget()
-            self.sliderchannel_Two.grid_forget()
-            self.sliderchannel_Three.grid_forget()
-            self.inputchannel_One.grid_forget()
-            self.inputchannel_Two.grid_forget()
-            self.inputchannel_Three.grid_forget()
-            if self.error_message_slider_entry:
-                self.error_message_slider_entry.grid_forget()
-        self.Menu_Two_Slider = not self.Menu_Two_Slider
 
     def load_text(self):
         self.StartupLabel = ctk.CTkLabel(text="Test system", master=self, font=ctk.CTkFont(size=15, weight="bold"), justify="center")
@@ -304,80 +287,86 @@ class App(ctk.CTk):
             self.startbutton.grid(row=6, column=0, padx=30)
         self.update()
 
-    def Sliders(self):
-        if self.status_flow:
-            self.inputchannel_One = ctk.CTkEntry(self)
-            self.sliderchannel_One = ctk.CTkSlider(master=self, width=10, height=200, from_=0, to=100,progress_color="blue", orientation="vertical")
-            self.inputchannel_One.grid(row=2, column=5, sticky="S")
-            self.inputchannel_One.bind("<Return>", lambda event: self.set_slider_value(1))
-            self.sliderchannel_One.grid(row=4, column=5)
-
-            self.inputchannel_Two = ctk.CTkEntry(self)
-            self.sliderchannel_Two = ctk.CTkSlider(master=self, width=10, height=200, from_=0, to=100,progress_color="blue", orientation="vertical")
-            self.inputchannel_Two.grid(row=2, column=6, sticky="S")
-            self.inputchannel_Two.bind("<Return>", lambda event: self.set_slider_value(2))
-            self.sliderchannel_Two.grid(row=4, column=6)
-
-            self.inputchannel_Three = ctk.CTkEntry(self)
-            self.sliderchannel_Three = ctk.CTkSlider(master=self, width=10, height=200, from_=0, to=100,progress_color="blue", orientation="vertical")
-            self.inputchannel_Three.grid(row=2, column=7, sticky="S")
-            self.inputchannel_Three.bind("<Return>", lambda event: self.set_slider_value(3))
-            self.sliderchannel_Three.grid(row=4, column=7)
-
-        self.update_entry_from_slider()
-        self.bind("<Motion>", self.update_entry_from_slider)
-
-    def set_slider_value(self, column):
-        if column == 1:
-            try:
-                value_one = int(self.inputchannel_One.get())
-                self.sliderchannel_One.set(value_one)
-                self.update_entry_from_slider()
-                self.error_message_slider_entry.configure(text="")
-            except ValueError:
-                self.error_slider_value(1)
-
-        elif column == 2:
-            try:
-                value_two = int(self.inputchannel_Two.get())
-                self.sliderchannel_Two.set(value_two)
-                self.update_entry_from_slider()
-                self.error_message_slider_entry.configure(text="")
-
-            except ValueError:
-                self.error_slider_value(2)
-
+    def Topbar_Sliders(self):
+        if self.Menu_Two_Slider:
+            self.Slider()
         else:
-            try:
-                value_three = int(self.inputchannel_Three.get())
-                self.sliderchannel_Three.set(value_three)
-                self.update_entry_from_slider()
-                self.error_message_slider_entry.configure(text="")
+            for i in range(3):
+                self.sliders_var[i].grid_forget()
+                self.input_var[i].grid_forget()
+                self.arrow_up[i].grid_forget()
+                self.arrow_down[i].grid_forget()
+            self.sliders_var = []
+            self.input_var = []
+            self.arrow_up = []
+            self.arrow_down = []
+        self.Menu_Two_Slider = not self.Menu_Two_Slider
 
-            except ValueError:
-                self.error_slider_value(3)
-
-    def error_slider_value(self, x):
-        self.error_message_slider_entry = ctk.CTkLabel(self, text="Please input a valid number")
-        self.error_message_slider_entry.grid(row=3, column=x, sticky="n")
-
-    def update_entry_from_slider(self, event=None):
-        self.value_one = self.sliderchannel_One.get()
-        self.value_two = self.sliderchannel_Two.get()
-        self.value_three = self.sliderchannel_Three.get()
-        self.format_value_one = "{:.1f}".format(self.value_one)
-        self.format_value_two = "{:.1f}".format(self.value_two)
-        self.format_value_three = "{:.1f}".format(self.value_three)
-        self.inputchannel_One.delete(0, ctk.END, )
-        self.inputchannel_One.insert(0, str(self.format_value_one) + " %")
-        self.inputchannel_Two.delete(0, ctk.END, )
-        self.inputchannel_Two.insert(0, str(self.format_value_two) + " %")
-        self.inputchannel_Three.delete(0, ctk.END, )
-        self.inputchannel_Three.insert(0, str(self.format_value_three) + " %")
+    def Slider(self):
         if self.status_flow:
-            self.flow1.writeParameter(9, "{:.0f}".format(self.value_one / 100 * 32000))
-            self.flow2.writeParameter(9,"{:.0f}".format(self.value_two / 100 * 32000))
-            self.flow3.writeParameter(9,"{:.0f}".format(self.value_three / 100 * 32000))
+            for i in range(3):
+                arrow_up = ctk.CTkButton(self, text="🔼", width=20, height=20, font=ctk.CTkFont(size=20),command=lambda index=i: self.arrow_up_command(index))
+                arrow_up.grid(row=3, column=4 + i)
+                slider = ctk.CTkSlider(self, width=10, height=200, from_=0, to=100, progress_color="blue",orientation="vertical",command=lambda event, index=i: self.set_entry_value(index))
+                slider.grid(row=4, column=4 + i)
+                slider.set(0)
+                arrow_down = ctk.CTkButton(self, text="🔽", width=20, height=20, font=ctk.CTkFont(size=20),command=lambda index=i: self.arrow_down_command(index))
+                arrow_down.grid(row=5, column=4 + i)
+                entry = ctk.CTkEntry(self)
+                entry.grid(row=2, column=4 + i, sticky="s")
+                entry.insert(0, str(slider.get()))
+                entry.bind("<KeyRelease>", lambda event, index=i: self.set_slider_value(index))
+
+                self.sliders_var.append(slider)
+                self.input_var.append(entry)
+                self.arrow_up.append(arrow_up)
+                self.arrow_down.append(arrow_down)
+
+    def set_slider_value(self, i, value = None, event=None):
+        if value == None:
+            try:
+                value = float(self.input_var[i].get())
+            except Exception:
+                value = 0
+        self.sliders_var[i].set(value)
+        if i == 0:
+            self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+        elif i == 1:
+            self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+        else:
+            self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+
+    def set_entry_value(self, i, value=None, event=None):
+        self.input_var[i].delete(0, ctk.END)
+        if value == None:
+            value = self.sliders_var[i].get()
+        self.input_var[i].insert(0, "{:.1f}".format(value))
+        if i == 0:
+            self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+        elif i == 1:
+            self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+        else:
+            self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+
+    def arrow_up_command(self, i):
+        try:
+            value = float(self.input_var[i].get())
+        except Exception:
+            value = 0
+        value += 0.1
+        self.set_entry_value(i, value)
+        self.set_slider_value(i, value)
+
+
+    def arrow_down_command(self, i):
+        try:
+            value = float(self.input_var[i].get())
+        except Exception:
+            value = 0
+        value -= 0.1
+        self.set_entry_value(i, value)
+        self.set_slider_value(i, value)
+
 
     def get_time(self):
         self.current_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")

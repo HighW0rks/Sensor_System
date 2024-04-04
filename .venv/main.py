@@ -18,7 +18,7 @@ import datetime
 
 def terminate_existing_main_processes():
     for proc in psutil.process_iter(['pid', 'name']):
-        if proc.info['name'] == 'main.exe':
+        if proc.info['name'] == 'Skalar Saxon Tester.exe':
             proc.terminate()
 
 class File_check(ctk.CTk):
@@ -35,16 +35,20 @@ class File_check(ctk.CTk):
         self.Location_check()
 
     def Location_check(self):
-        Location = Chart.ConfigurationApp().readfile_value(4)
-        if len(Location) <= 0:
-            self.Error_text.configure(text="Error!\nNo folder location found")
-            self.update()
-            self.Location_button.place(x=self.winfo_reqwidth()/2-self.Location_button.winfo_reqwidth()/4, y=50)
-            self.after(200, self.Location_check)
-        else:
-            self.destroy()
-            app = MainApp(self.con)
-            app.mainloop()
+        # Location = Chart.ConfigurationApp().readfile_value(4)
+        # if not os.path.exists(f"{Location}/config.txt"):
+        #     self.Error_text.configure(text="Error!\nNo folder location found")
+        #     self.update()
+        #     self.Location_button.place(x=self.winfo_reqwidth()/2-self.Location_button.winfo_reqwidth()/4, y=50)
+        #     self.after(200, self.Location_check)
+        # else:
+            # log_file_path = f"{Location}/debug_log.txt"
+            # log_file = open(log_file_path, "a")
+            # os.dup2(log_file.fileno(), 1)  # Redirect stdout
+            # os.dup2(log_file.fileno(), 2)  # Redirect stderr
+        self.destroy()
+        app = MainApp(self.con)
+        app.mainloop()
 
 class MainApp(ctk.CTk):
     def __init__(self,con):
@@ -58,7 +62,6 @@ class MainApp(ctk.CTk):
         self.main_run = True
         self.running = True
         self.program_run = True
-        self.serienummer = "Unknown"
         self.connection = con
         self.serial = self.connection.sensor
         self.sensor_status = 0
@@ -66,6 +69,8 @@ class MainApp(ctk.CTk):
         self.time = 0
         self.row_value = 0
         self.channel_option = None
+        self.serienummer = "Unknown"
+        self.channel_status = "Unknown"
         self.background_color()
         self.loading()
         self.protocol("WM_DELETE_WINDOW", self.close_app)
@@ -87,6 +92,7 @@ class MainApp(ctk.CTk):
         self.sensor_info()
         self.buttons()
         self.thread()
+        self.reset_flow()
         self.set_sensor()
         self.ppm_meter()
         self.zero_point()
@@ -102,8 +108,10 @@ class MainApp(ctk.CTk):
         self.frame_zero_point.grid(row=1, column=0, padx=(15, 0))
         self.information_title = ctk.CTkFrame(self)
         self.information_title.grid(row=2, column=0, columnspan=2,sticky="n",padx=(20,0),pady=(20,10))
-        self.information_tab = ctk.CTkFrame(self)
-        self.information_tab.grid(row=3, column=0,columnspan=2,padx=(20,0),sticky="n")
+        self.information_serienummer = ctk.CTkFrame(self)
+        self.information_serienummer.grid(row=3, column=0,padx=(20,0),sticky="n")
+        self.information_channel_status = ctk.CTkFrame(self)
+        self.information_channel_status.grid(row=3, column=1, padx=(20,0), sticky="n")
 
     def thread(self):
         sensor_thread = threading.Thread(target=self.sensor_thread)
@@ -112,6 +120,7 @@ class MainApp(ctk.CTk):
         flow_thread = threading.Thread(target=self.flow_thread)
         flow_thread.daemon = True
         flow_thread.start()
+
 
     def buttons(self):
         self.empty_button_frame = ctk.CTkLabel(master=self.frame_button, text="", height=0)
@@ -137,7 +146,6 @@ class MainApp(ctk.CTk):
                 self.connection.sensor.write(b"\x02\x30\x39\x30\x30\x34\x34\x30\x30\x30\x62\x03")
                 read = self.connection.sensor.read(1024)
                 print("Read SN: ", read)
-                print(len(read))
                 self.serienummer = str(read.decode()[5:13])
                 if len(read) == 0 or len(read) > 24 :
                     self.serienummer = "Unknown"
@@ -151,8 +159,10 @@ class MainApp(ctk.CTk):
     def sensor_info(self):
         title = ctk.CTkLabel(master=self.information_title, text="Sensor Information", font=ctk.CTkFont(size=15,weight="bold"))
         title.grid(row=0, column=0, padx=80, pady=5)
-        self.version = ctk.CTkLabel(master=self.information_tab, text=f"Serie Nummer\n{self.serienummer}")
-        self.version.grid(row=0, column=0,padx=20,pady=10)
+        self.serienummer_label = ctk.CTkLabel(master=self.information_serienummer, text=f"Serie Nummer\n{self.serienummer}")
+        self.serienummer_label.grid(row=0, column=0,padx=20,pady=10)
+        self.status_channel = ctk.CTkLabel(master=self.information_channel_status, text="Unkown")
+        self.status_channel.grid(row=0, column=0, padx=20, pady=10)
 
     def set_sensor(self):
         self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center", command=self.set_channel)
@@ -205,22 +215,27 @@ class MainApp(ctk.CTk):
                     self.temperature = response.split()[7]
                     self.air_pressure = response.split()[8]
 
+                    if self.channel_1 == self.ppm_value or self.channel_2 == self.ppm_value or self.channel_3 == self.ppm_value:
+                        self.status_channel.configure(text="K1/K2/K3")
+                    else:
+                        self.status_channel.configure(text="K4/K6")
+
                     with open("transfer.txt", "w") as write:
                         write.writelines(self.ppm_value)
-                    self.version.configure(text=f"Serie Nummer\n{self.serienummer}")
+                    self.serienummer_label.configure(text=f"Serie Nummer\n{self.serienummer}")
                     self.ppm_meter_label.configure(text=f"PPM value\n\n{self.ppm_value}")
                     x = False
                 else:
                     self.serienummer = "Unknown"
                     self.sensor_status = 0
-                    self.version.configure(text="Serie Nummer\nUnknown")
+                    self.serienummer_label.configure(text="Serie Nummer\nUnknown")
                     self.ppm_meter_label.configure(text="Sensor not found")
                     x = True
             except Exception as e:
                 self.serienummer = "Unknown"
                 self.sensor_status = 0
                 print(f"Error in sensor communication: {e}")
-                self.version.configure(text="Serie Nummer\nUnknown")
+                self.serienummer_label.configure(text="Serie Nummer\nUnknown")
                 self.ppm_meter_label.configure(text="Sensor not found")
                 time.sleep(1)
                 self.connection.initialize_sensor()
@@ -231,12 +246,9 @@ class MainApp(ctk.CTk):
     def flow_thread(self):
         while self.main_run:
             try:
-                flow1 = self.connection.flow_1
-                flow2 = self.connection.flow_2
-                flow3 = self.connection.flow_3
-                self.flow1_value = flow1.readParameter(8)
-                self.flow2_value = flow2.readParameter(8)
-                self.flow3_value = flow3.readParameter(8)
+                self.flow1_value = self.connection.flow_1.readParameter(8)
+                self.flow2_value = self.connection.flow_2.readParameter(8)
+                self.flow3_value = self.connection.flow_3.readParameter(8)
                 if self.flow1_value != None:
                     self.flow_status = True
                 else:
@@ -246,6 +258,14 @@ class MainApp(ctk.CTk):
                 self.flow_status = 0
             self.after(1000, self.status_update)
             time.sleep(1)
+
+    def reset_flow(self):
+        try:
+            self.connection.flow_1.writeParameter(9, 0)
+            self.connection.flow_2.writeParameter(9, 0)
+            self.connection.flow_3.writeParameter(9, 0)
+        except Exception:
+            pass
 
     def status_update(self):
         self.status_sensor_var.set(self.sensor_status)
@@ -291,7 +311,6 @@ class MainApp(ctk.CTk):
 
     def start_excel(self):
         self.excel_row = 2
-        self.Location = Chart.ConfigurationApp().readfile_value(4)
         self.workbook = openpyxl.load_workbook(fr"{self.folder}/{self.folder_location}/{self.excel_file}")
         self.worksheet = self.workbook["Sheet1"]
         self.worksheet['E2'] = self.serienummer
@@ -300,44 +319,19 @@ class MainApp(ctk.CTk):
 
         if self.channel == "Ch1":
             self.worksheet = self.workbook["Ch.1 2-60%"]
-            first = 180
-            last = 200
-            for i in range(16):
-                self.worksheet[f'L{i + 14}'] = f"=AVERAGE(F{first}:F{last})"
-                first += 100
-                last += 100
+
         elif self.channel == "Ch2":
             self.worksheet = self.workbook["Ch.2 500-20000 2%"]
-            first = 80
-            last = 100
-            for i in range(21):
-                self.worksheet[f'L{i + 14}'] = f"=AVERAGE(F{first}:F{last})"
-                first += 100
-                last += 100
+
         elif self.channel == "Ch3":
             self.worksheet = self.workbook["Ch.3 0-1000 2%"]
-            first = 80
-            last = 100
-            for i in range(12):
-                self.worksheet[f'L{i + 14}'] = f"=AVERAGE(F{first}:F{last})"
-                first += 100
-                last += 100
+
         elif self.channel == "Ch4":
             self.worksheet = self.workbook["Ch.4 500-20000 2%"]
-            first = 80
-            last = 100
-            for i in range(21):
-                self.worksheet[f'L{i + 14}'] = f"=AVERAGE(F{first}:F{last})"
-                first += 100
-                last += 100
+
         elif self.channel == "Ch6":
             self.worksheet = self.workbook["Ch.6 0-20%"]
-            first = 80
-            last = 100
-            for i in range(11):
-                self.worksheet[f'L{i + 14}'] = f"=AVERAGE(F{first}:F{last})"
-                first += 100
-                last += 100
+
 
         self.worksheet['A1'] = 'Time'
         self.worksheet['B1'] = 'Channel 1'
@@ -368,7 +362,7 @@ class MainApp(ctk.CTk):
             self.worksheet[f'A{self.excel_row}'] = self.current_time
             self.worksheet[f'B{self.excel_row}'] = self.channel_1
             self.worksheet[f'C{self.excel_row}'] = self.channel_2
-            self.worksheet[f'D{self.excel_row}'] = self.channel_3
+            # self.worksheet[f'D{self.excel_row}'] = self.channel_3
             self.worksheet[f'E{self.excel_row}'] = self.channel_4
             self.worksheet[f'F{self.excel_row}'] = float(self.ppm_value)
             self.worksheet[f'G{self.excel_row}'] = self.channel_6
@@ -401,9 +395,6 @@ class MainApp(ctk.CTk):
                     self.channel_value = read_value[self.row_value].split("; ")[2].strip()
                     print(f"Sec: {self.seconde_value}  | Flow: ", "{:.0f}".format(float(self.percentage_value) * 32000 / 100),f" | Channel: {self.channel_value}")
                     self.set_value()
-            # except Exception as e:
-            #     print(e)
-            #     pass
         else:
             print("Excel has been writen")
 
@@ -440,10 +431,8 @@ class MainApp(ctk.CTk):
             self.running = False
 
     def open_chart(self):
-        # self.main_run = False
         app = Chart.App(self.connection,self.serienummer)
         app.protocol("WM_DELETE_WINDOW", app.destroy)
-        print("test")
         app.mainloop()
 
     def open_config(self):
@@ -549,16 +538,14 @@ class Configuration(ctk.CTk):
         with open("config.txt", "r") as file:
             value = file.readlines()[6].split(": ")[1].split("\n")[0]
         if value == "True":
-            print("K1/K2/K3")
+            print("Switched from K4/K6 to K1/K2/K3")
             self.sensor.write(b"\x02\x38\x31\x30\x30\x30\x33\x62\x03")
             value = "False"
         else:
-            print("K4/K6")
+            print("Switched from K1/K2/K3 to K4/K6")
             self.sensor.write(b"\x02\x38\x31\x30\x30\x31\x33\x61\x03")
             value = "True"
-        with open("config.txt", "w") as w:
-            self.read[6] = f"Channel: {value}\n"
-            w.writelines(self.read)
+        self.read[6] = f"Channel: {value}\n"
 
     def directory(self):
         ctk.CTkButton(master=self.frame_folder, text="Select the main folder", command=self.folder_location).grid(row=0, column=0)
@@ -571,17 +558,14 @@ class Configuration(ctk.CTk):
         main.MainApp.background_color(ctk.CTk)
 
     def restart_app(self):
+        with open("config.txt", "w") as w:
+            w.writelines(self.read)
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
     def destroy(self):
         super().destroy()
 
 if __name__ == "__main__":
-    # log_file_path = r"C:\Users\rijken.b\Documents\Test Systeem\debug_log.txt"
-    #
-    # log_file = open(log_file_path, "a")
-    # os.dup2(log_file.fileno(), 1)  # Redirect stdout
-    # os.dup2(log_file.fileno(), 2)  # Redirect stderr
     con = Connection()
     mainapp = File_check(con)
     mainapp.mainloop()
