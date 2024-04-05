@@ -35,20 +35,20 @@ class File_check(ctk.CTk):
         self.Location_check()
 
     def Location_check(self):
-        # Location = Chart.ConfigurationApp().readfile_value(4)
-        # if not os.path.exists(f"{Location}/config.txt"):
-        #     self.Error_text.configure(text="Error!\nNo folder location found")
-        #     self.update()
-        #     self.Location_button.place(x=self.winfo_reqwidth()/2-self.Location_button.winfo_reqwidth()/4, y=50)
-        #     self.after(200, self.Location_check)
-        # else:
+        Location = Chart.ConfigurationApp().readfile_value(4)
+        if not os.path.exists(f"{Location}/2SN100224"):
+            self.Error_text.configure(text="Error!\nNo folder location found")
+            self.update()
+            self.Location_button.place(x=self.winfo_reqwidth()/2-self.Location_button.winfo_reqwidth()/4, y=50)
+            self.after(200, self.Location_check)
+        else:
             # log_file_path = f"{Location}/debug_log.txt"
             # log_file = open(log_file_path, "a")
             # os.dup2(log_file.fileno(), 1)  # Redirect stdout
             # os.dup2(log_file.fileno(), 2)  # Redirect stderr
-        self.destroy()
-        app = MainApp(self.con)
-        app.mainloop()
+            self.destroy()
+            app = MainApp(self.con)
+            app.mainloop()
 
 class MainApp(ctk.CTk):
     def __init__(self,con):
@@ -63,7 +63,6 @@ class MainApp(ctk.CTk):
         self.running = True
         self.program_run = True
         self.connection = con
-        self.serial = self.connection.sensor
         self.sensor_status = 0
         self.flow_status = 0
         self.time = 0
@@ -87,6 +86,7 @@ class MainApp(ctk.CTk):
 
     def loading(self):
         self.frame()
+        self.ppm_meter()
         self.status_info()
         self.sensor_info_con()
         self.sensor_info()
@@ -94,7 +94,6 @@ class MainApp(ctk.CTk):
         self.thread()
         self.reset_flow()
         self.set_sensor()
-        self.ppm_meter()
         self.zero_point()
 
     def frame(self):
@@ -155,14 +154,22 @@ class MainApp(ctk.CTk):
             except Exception as e:
                 print(e)
                 pass
+    def status_channel(self):
+        try:
+            if self.channel_1 == self.ppm_value or self.channel_2 == self.ppm_value or self.channel_3 == self.ppm_value:
+                self.status_channel_label.configure(text="K1/K2/K3")
+            else:
+                self.status_channel_label.configure(text="K4/K6")
+        except Exception:
+            pass
 
     def sensor_info(self):
         title = ctk.CTkLabel(master=self.information_title, text="Sensor Information", font=ctk.CTkFont(size=15,weight="bold"))
         title.grid(row=0, column=0, padx=80, pady=5)
         self.serienummer_label = ctk.CTkLabel(master=self.information_serienummer, text=f"Serie Nummer\n{self.serienummer}")
         self.serienummer_label.grid(row=0, column=0,padx=20,pady=10)
-        self.status_channel = ctk.CTkLabel(master=self.information_channel_status, text="Unkown")
-        self.status_channel.grid(row=0, column=0, padx=20, pady=10)
+        self.status_channel_label = ctk.CTkLabel(master=self.information_channel_status, text="Unknown")
+        self.status_channel_label.grid(row=0, column=0, padx=20, pady=10)
 
     def set_sensor(self):
         self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center", command=self.set_channel)
@@ -198,12 +205,15 @@ class MainApp(ctk.CTk):
     def sensor_thread(self):
         self.sensor_info_con()
         while self.main_run:
+            if self.status_channel_label.cget('text') == "Unknown":
+                self.status_channel()
             if self.serienummer == "Unknown":
                 self.sensor_info_con()
             try:
-                self.serial.write(b"\x02\x30\x35\x30\x30\x30\x37\x03")
-                response = self.serial.read(1024).decode()
+                self.connection.sensor.write(b"\x02\x30\x35\x30\x30\x30\x37\x03")
+                response = self.connection.sensor.read(1024).decode()
                 print("Response: ",response)
+                configure = False
                 if response:
                     self.sensor_status = 1
                     self.channel_1 = response.split()[1]
@@ -215,10 +225,6 @@ class MainApp(ctk.CTk):
                     self.temperature = response.split()[7]
                     self.air_pressure = response.split()[8]
 
-                    if self.channel_1 == self.ppm_value or self.channel_2 == self.ppm_value or self.channel_3 == self.ppm_value:
-                        self.status_channel.configure(text="K1/K2/K3")
-                    else:
-                        self.status_channel.configure(text="K4/K6")
 
                     with open("transfer.txt", "w") as write:
                         write.writelines(self.ppm_value)
@@ -230,18 +236,23 @@ class MainApp(ctk.CTk):
                     self.sensor_status = 0
                     self.serienummer_label.configure(text="Serie Nummer\nUnknown")
                     self.ppm_meter_label.configure(text="Sensor not found")
+                    self.status_channel_label.configure(text="Unknown")
                     x = True
             except Exception as e:
                 self.serienummer = "Unknown"
                 self.sensor_status = 0
                 print(f"Error in sensor communication: {e}")
-                self.serienummer_label.configure(text="Serie Nummer\nUnknown")
-                self.ppm_meter_label.configure(text="Sensor not found")
+                configure = True
                 time.sleep(1)
-                self.connection.initialize_sensor()
-                self.serial = self.connection.sensor
                 x = True
-                pass
+            if configure:
+                self.sensor_info_label_configure()
+                self.connection.initialize_sensor()
+
+    def sensor_info_label_configure(self):
+        self.serienummer_label.configure(text="Serie Nummer\nUnknown")
+        self.ppm_meter_label.configure(text="Sensor not found")
+        self.status_channel_label.configure(text="Unknown")
 
     def flow_thread(self):
         while self.main_run:
@@ -297,7 +308,7 @@ class MainApp(ctk.CTk):
 
     def send_zero_point_command(self):
         self.main_run = False
-        self.serial.write(b"\x02\x34\x30\x30\x30\x30\x36\x03")
+        self.connection.sensor.write(b"\x02\x34\x30\x30\x30\x30\x36\x03")
         time.sleep(1)
         self.main_run = True
 
@@ -362,7 +373,7 @@ class MainApp(ctk.CTk):
             self.worksheet[f'A{self.excel_row}'] = self.current_time
             self.worksheet[f'B{self.excel_row}'] = self.channel_1
             self.worksheet[f'C{self.excel_row}'] = self.channel_2
-            # self.worksheet[f'D{self.excel_row}'] = self.channel_3
+            self.worksheet[f'D{self.excel_row}'] = self.channel_3
             self.worksheet[f'E{self.excel_row}'] = self.channel_4
             self.worksheet[f'F{self.excel_row}'] = float(self.ppm_value)
             self.worksheet[f'G{self.excel_row}'] = self.channel_6
@@ -437,7 +448,7 @@ class MainApp(ctk.CTk):
 
     def open_config(self):
         self.main_run = False
-        app = main.Configuration(self.connection,self.serial)
+        app = main.Configuration(self.connection,self.connection.sensor)
         app.protocol("WM_DELETE_WINDOW", lambda: (app.destroy(), self.switch_main_run(), self.thread()))
         app.mainloop()
     def switch_main_run(self):

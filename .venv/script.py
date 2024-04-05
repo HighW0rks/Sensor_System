@@ -87,8 +87,8 @@ class app(ctk.CTk):
         self.channel_value_combobox.grid(row=self.i, column=3)
         self.channel_value_combobox.set(self.combobox_value)
         self.channel_value_combobox_array.append(self.channel_value_combobox)
-        self.time_entry.bind("<Return>", lambda event: self.update_script_file())
-        self.setpoint_value_entry.bind("<Return>", lambda event: self.update_script_file())
+        self.time_entry.bind("<KeyRelease>", lambda event: self.update_script_file())
+        self.setpoint_value_entry.bind("<KeyRelease>", lambda event: self.update_script_file())
         self.scrollable_frame_entry.append(self.time_entry)
 
     def update_script_file(self):
