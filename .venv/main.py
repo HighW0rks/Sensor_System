@@ -63,7 +63,7 @@ class MainApp(ctk.CTk):
         self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")  # Set application icon
         self.geometry("500x550")  # Set window geometry
         self.resizable(width=False, height=False)  # Disable window resizing
-        self.title("Test App")  # Set window title
+        self.title("Skalar Saxon Tester")  # Set window title
         self.status_sensor_var = tk.IntVar(value=0)  # Variable to track sensor status
         self.status_flow_var = tk.IntVar(value=0)  # Variable to track flow status
         self.main_run = True  # Flag to indicate if the main loop is running
