@@ -336,8 +336,7 @@ class MainApp(ctk.CTk):
         self.empty_zero_point_frame.grid(row=0, column=0, padx=100)
 
         # Initialize zero point button
-        self.zero_point_button = ctk.CTkButton(master=self.frame_zero_point, text="Zero Point",
-                                               command=self.send_zero_point_command)
+        self.zero_point_button = ctk.CTkButton(master=self.frame_zero_point, text="Zero Point",command=self.send_zero_point_command)
         self.zero_point_button.grid(row=1, column=0, pady=(0, 17))
 
     def send_zero_point_command(self):
@@ -452,8 +451,7 @@ class MainApp(ctk.CTk):
                     self.get_time()
                     if not os.path.exists(f"{self.folder}/{self.folder_location}/{self.serienummer}"):
                         os.mkdir(f"{self.folder}/{self.folder_location}/{self.serienummer}")
-                    self.workbook.save(
-                        f"{self.folder}/{self.folder_location}/{self.serienummer}/{self.channel}_{self.current_time}.xlsx")
+                    self.workbook.save(f"{self.folder}/{self.folder_location}/{self.serienummer}/{self.channel}_{self.current_time}.xlsx")
                     # Stop program
                     self.start_stop(1)
                     return
@@ -463,9 +461,7 @@ class MainApp(ctk.CTk):
                     self.percentage_value = read_value[self.row_value].split("; ")[1].strip()
                     self.channel_value = read_value[self.row_value].split("; ")[2].strip()
                     # Print values for debugging
-                    print(f"Sec: {self.seconde_value}  | Flow: ",
-                          "{:.0f}".format(float(self.percentage_value) * 32000 / 100),
-                          f" | Channel: {self.channel_value}")
+                    print(f"Sec: {self.seconde_value}  | Flow: ","{:.0f}".format(float(self.percentage_value) * 32000 / 100),f" | Channel: {self.channel_value}")
                     # Set flow value
                     self.set_value()
         else:
