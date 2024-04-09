@@ -18,9 +18,12 @@ class App(ctk.CTk):
         self.c = con
         self.serienummer = sn
         print(self.c)
-        self.flow1 = self.c.flow_1
-        self.flow2 = self.c.flow_2
-        self.flow3 = self.c.flow_3
+        try:
+            self.flow1 = self.c.flow_1
+            self.flow2 = self.c.flow_2
+            self.flow3 = self.c.flow_3
+        except Exception:
+            pass
         self.status_flow = self.c.status_flow
         self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
         self.resizable(width=False, height=False)
