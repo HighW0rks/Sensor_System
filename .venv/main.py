@@ -13,7 +13,7 @@ import serial.tools.list_ports
 import tkinter as tk
 import tkinter.ttk as ttk
 import customtkinter as ctk
-#  Uncommon library
+# Uncommon library
 import main
 from connection import Connection
 import Chart
@@ -371,6 +371,7 @@ class MainApp(ctk.CTk):
             fr"{self.folder}/{self.folder_location}/{self.excel_file}")  # Load workbook
         self.worksheet = self.workbook["Sheet1"]  # Select Sheet1
         self.worksheet['E2'] = self.serienummer  # Set serial number
+        self.worksheet['E3'] = self.folder_location # Set model
         self.worksheet['E4'] = self.sensor_version  # Set sensor version
         self.worksheet['J3'] = datetime.datetime.now().strftime("%Y-%m-%d")  # Set date
 
