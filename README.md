@@ -10,9 +10,3 @@ This repository contains a Python GUI application built using CustomTkinter for 
 - Connection tester to see if the Bronkhorst or Saxon is connected correctly.
 
 - Select the desired sensor channel from the dropdown menu.
-
-## Contributing
-Contributions are welcome! Please fork the repository and submit a pull request with your changes.
-
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
