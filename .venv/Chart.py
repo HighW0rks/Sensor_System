@@ -10,6 +10,7 @@ import xlsxwriter
 import datetime
 import script
 import propar
+from Config import text_config, readfile_value
 
 class App(ctk.CTk):
     def __init__(self,con,sn=None):
@@ -166,8 +167,8 @@ class App(ctk.CTk):
         self.StartupLabel.grid(row=1, column=0, padx=50, pady=10)
 
     def Get_x_axis_values(self):
-        self.value_x_axis = int(ConfigurationApp().readfile_value(1))
-        self.value_steps = int(ConfigurationApp().readfile_value(2))
+        self.value_x_axis = int(readfile_value(1))
+        self.value_steps = int(readfile_value(2))
 
     def Masterchart(self):
         self.Get_x_axis_values()
@@ -215,7 +216,8 @@ class App(ctk.CTk):
     def Chartline(self):
         self.Drawline_1 = tkchart.Line(master=self.Masterchart,
                                        color="lightblue",
-                                       size=2)
+                                       size=2,
+                                       fill="enabled")
         self.Drawline_2 = tkchart.Line(master=self.Masterchart,
                                        color="red",
                                        size=2)
@@ -231,7 +233,7 @@ class App(ctk.CTk):
         self.start_excel()
 
     def start_excel(self):
-        Location = ConfigurationApp().readfile_value(4)
+        Location = readfile_value(8)
         self.get_time()
         self.workbook = xlsxwriter.Workbook(fr"{Location}\{self.serienummer}-{self.current_time}.xlsx")
         self.worksheet = self.workbook.add_worksheet()
@@ -308,16 +310,22 @@ class App(ctk.CTk):
     def Slider(self):
         if self.status_flow:
             for i in range(3):
+                if i == 0:
+                    flow = self.flow1.readParameter(8) / 320
+                elif i == 1:
+                    flow = self.flow2.readParameter(8) / 320
+                else:
+                    flow = self.flow3.readParameter(8) / 320
                 arrow_up = ctk.CTkButton(self, text="🔼", width=20, height=20, font=ctk.CTkFont(size=20),command=lambda index=i: self.arrow_up_command(index))
                 arrow_up.grid(row=3, column=4 + i)
                 slider = ctk.CTkSlider(self, width=10, height=200, from_=0, to=100, progress_color="blue",orientation="vertical",command=lambda event, index=i: self.set_entry_value(index))
                 slider.grid(row=4, column=4 + i)
-                slider.set(0)
+                slider.set(flow)
                 arrow_down = ctk.CTkButton(self, text="🔽", width=20, height=20, font=ctk.CTkFont(size=20),command=lambda index=i: self.arrow_down_command(index))
                 arrow_down.grid(row=5, column=4 + i)
                 entry = ctk.CTkEntry(self)
                 entry.grid(row=2, column=4 + i, sticky="s")
-                entry.insert(0, str(slider.get()))
+                entry.insert(0, flow)
                 entry.bind("<KeyRelease>", lambda event, index=i: self.set_slider_value(index))
 
                 self.sliders_var.append(slider)
@@ -392,7 +400,7 @@ class App(ctk.CTk):
                 parameter_value_1 = self.flow1.readParameter(8)
                 self.test = self.c.sensor
 
-                print(parameter_value_1, " | ",self.sensor_data)
+                # print(parameter_value_1, " | ",self.sensor_data)
                 if parameter_value_1 is not None:
                     self.bronkhorst_data_1 = parameter_value_1 / 32000 * 100
                 else:
@@ -452,28 +460,24 @@ class ConfigurationApp(ctk.CTk):
         super().__init__()
         self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
         self.config_file = "config.txt"
-        self.geometry("800x600")
         self.X_as_middle = 800/2
         self.resizable(width=False, height=False)
         self.title("Configuration")
         self.Titletext = None
         self.config_option_name = None
-        self.dark_white_mode_var = None
         self.loading()
 
     def loading(self):
         self.Frame_Input = ctk.CTkFrame(self)
         self.Frame_Input.grid(row=1, column=0,padx=(self.X_as_middle-self.Frame_Input.winfo_reqwidth())/2,pady=40, stick="nsew")
-        self.Frame_Bool = ctk.CTkFrame(self)
-        self.Frame_Bool.grid(row=1,column=1,padx=(self.X_as_middle-self.Frame_Bool.winfo_reqwidth())/2,pady=40, sticky="nsew")
         self.Close_Save_Button = ctk.CTkButton(self, text="Save & Close", command=self.destroy)
-        self.Close_Save_Button.place(x=self.X_as_middle-self.Close_Save_Button.winfo_reqwidth()/2, y=600-50)
+        self.Close_Save_Button.grid(row=2, column=0, pady=(0,20))
         self.Title()
         self.Section_Input()
 
     def Title(self):
         self.Titletext = ctk.CTkLabel(master=self, text="Configuration", font=ctk.CTkFont(size=20, weight="bold"))
-        self.Titletext.grid(row=0, column=0,columnspan=3, sticky="N")
+        self.Titletext.grid(row=0, column=0, sticky="N")
 
     def Section_Input(self):
         self.text_option_seconden = ctk.CTkLabel(master=self.Frame_Input, text="Seconden")
@@ -481,49 +485,18 @@ class ConfigurationApp(ctk.CTk):
         self.text_option_seconden_step = ctk.CTkLabel(master=self.Frame_Input, text="Stappen tussenin")
         self.text_option_seconden_step.grid(row=2,column=0,sticky="w")
         self.config_option_seconden = ctk.CTkEntry(master=self.Frame_Input)
-        self.config_option_seconden.insert(0,self.readfile_value(1))
+        self.config_option_seconden.insert(0,readfile_value(1))
         self.config_option_seconden.grid(row=1,column=1, padx=(10,20))
-        self.config_option_seconden.bind("<Return>", lambda event: self.text_config(1, self.config_option_seconden))
+        self.config_option_seconden.bind("<Return>", lambda event: text_config(1, self.config_option_seconden))
         self.config_option_seconden_step = ctk.CTkEntry(master=self.Frame_Input)
-        self.config_option_seconden_step.insert(0,self.readfile_value(2))
+        self.config_option_seconden_step.insert(0,readfile_value(2))
         self.config_option_seconden_step.grid(row=2,column=1)
-        self.config_option_seconden_step.bind("<Return>", lambda event: self.text_config(2, self.config_option_seconden_step))
-        self.Input_Folder = ctk.CTkButton(master=self.Frame_Input, text="Select a folder",
-                                          command=self.Folder_Location_Config)
-        self.Input_Folder.grid(row=3, column=1, padx=20, pady=20)
+        self.config_option_seconden_step.bind("<Return>", lambda event: text_config(2, self.config_option_seconden_step))
+
 
     def Close_Save(self):
-        self.text_config(2,self.config_option_seconden_step)
-        self.text_config(1, self.config_option_seconden)
-
-    def readfile_value(self, row):
-        with open(self.config_file,"r") as read:
-            self.config_text_value = read.readlines()
-        try:
-            self.parameter_text_configvalue = str(self.config_text_value[row - 1]).split(": ")[1].strip()
-        except IndexError:
-            self.parameter_text_configvalue = ""
-        return self.parameter_text_configvalue
-
-    def text_config(self, row, name):
-        with open(self.config_file, "r") as read:
-            self.config_text_value = read.readlines()
-        self.parameter_text_configname = str(self.config_text_value[row - 1]).split(": ")[0].strip()
-        try:
-            self.config_new_value = name.get()
-        except Exception:
-            self.config_new_value = name
-        self.updated_text_row = f"{self.parameter_text_configname}: {self.config_new_value}\n"
-        self.config_text_value[row - 1] = self.updated_text_row
-        with open(self.config_file, "w") as write:
-            write.writelines(self.config_text_value)
-
-    def Folder_Location_Config(self):
-        self.Folder_Location = tk.filedialog.askdirectory()
-        self.text_config(4,self.Folder_Location)
-
-    def restart(self):
-        main.MainApp.background_color(ctk.CTk)
+        text_config(2,self.config_option_seconden_step)
+        text_config(1, self.config_option_seconden)
 
     def destroy(self):
         self.Close_Save()

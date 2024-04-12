@@ -13,10 +13,12 @@ import serial.tools.list_ports
 import tkinter as tk
 import tkinter.ttk as ttk
 import customtkinter as ctk
+import tkchart
 # Uncommon library
 import main
 from connection import Connection
 import Chart
+from Config import readfile_value, text_config
 import propar
 
 def terminate_existing_main_processes():
@@ -40,10 +42,10 @@ class File_check(ctk.CTk):
     def Location_check(self):
         # Function to check if the required folder location exists
         self.Error_text = ctk.CTkLabel(self, text="")  # Initialize error label
-        self.Location_button = ctk.CTkButton(self, text="Select a folder", command=Chart.ConfigurationApp().Folder_Location_Config)
+        self.Location_button = ctk.CTkButton(self, text="Select a folder", command=self.Folder_Location_Config)
         # Initialize button to select folder location
 
-        Location = Chart.ConfigurationApp().readfile_value(4)  # Read folder location from configuration
+        Location = readfile_value(8)  # Read folder location from configuration
         if not os.path.exists(f"{Location}/2SN100224"):
             # Check if the required folder does not exist
             self.Error_text.configure(text="Error!\nNo folder location found")  # Display error message
@@ -55,6 +57,10 @@ class File_check(ctk.CTk):
             self.destroy()  # Destroy the current window
             app = MainApp(self.con)  # Create an instance of the main application
             app.mainloop()  # Start the main application loop
+
+    def Folder_Location_Config(self):
+        self.Folder_Location = tk.filedialog.askdirectory()
+        text_config(8,self.Folder_Location)
 
 
 class MainApp(ctk.CTk):
@@ -136,8 +142,10 @@ class MainApp(ctk.CTk):
         self.empty_button_frame.grid(row=0,column=0,padx=100)
         self.chart_button = ctk.CTkButton(master=self.frame_button, text="Chart", command=self.open_chart)
         self.chart_button.grid(row=1,column=0,pady=(0,15))
+        self.sensor_button = ctk.CTkButton(master=self.frame_button, text="Sensor", command=self.open_sensor)
+        self.sensor_button.grid(row=2, column=0, pady=(0,15))
         self.config_button = ctk.CTkButton(master=self.frame_button, text="Config", command=self.open_config)
-        self.config_button.grid(row=2,column=0, pady=(0,15))
+        self.config_button.grid(row=3,column=0, pady=(0,15))
         self.start_button = ctk.CTkButton(self, text="Start", width=300, height=100, command=self.start_program)
         self.start_button.grid(row=6, column=0, columnspan=2, padx=(20,0),pady=(10,20), sticky="nsew")
         self.stop_button = ctk.CTkButton(self, text="Stop", width=300, height=100, command= lambda: self.start_stop(1))
@@ -154,10 +162,11 @@ class MainApp(ctk.CTk):
             try:
                 self.connection.sensor.write(b"\x02\x30\x39\x30\x30\x34\x34\x30\x30\x30\x62\x03")
                 read = self.connection.sensor.read(1024)
-                print("Read SN: ", read)
-                self.serienummer = str(read.decode()[5:13])
+                # print ("Read SN: ", read)
                 if len(read) == 0 or len(read) > 24 :
                     self.serienummer = "Unknown"
+                else:
+                    self.serienummer = str(read.decode()[5:13])
                 self.connection.sensor.write(b"\x02\x36\x38\x30\x30\x30\x63\x03")
                 read = self.connection.sensor.read(1024)
                 self.sensor_version = str(read.decode()[61:81])
@@ -170,9 +179,9 @@ class MainApp(ctk.CTk):
         try:
             if len(self.ppm_value) > 0:
                 if self.channel_1 == self.ppm_value or self.channel_2 == self.ppm_value or self.channel_3 == self.ppm_value:
-                    self.status_channel_label.configure(text="K1/K2/K3")
+                    self.status_channel_label.configure(text="Channel\nK1/K2/K3")
                 else:
-                    self.status_channel_label.configure(text="K4/K6")
+                    self.status_channel_label.configure(text="Channel\nK4/K6")
         except Exception:
             pass
 
@@ -182,7 +191,7 @@ class MainApp(ctk.CTk):
         title.grid(row=0, column=0, padx=80, pady=5)
         self.serienummer_label = ctk.CTkLabel(master=self.information_serienummer, text=f"Serie Nummer\n{self.serienummer}")
         self.serienummer_label.grid(row=0, column=0,padx=20,pady=10)
-        self.status_channel_label = ctk.CTkLabel(master=self.information_channel_status, text="Unknown")
+        self.status_channel_label = ctk.CTkLabel(master=self.information_channel_status, text="Channel\nUnknown")
         self.status_channel_label.grid(row=0, column=0, padx=20, pady=10)
 
 
@@ -225,7 +234,7 @@ class MainApp(ctk.CTk):
         # Continuous loop for sensor communication
         while self.main_run:
             # Check if channel label status is unknown and update if necessary
-            if self.status_channel_label.cget('text') == "Unknown":
+            if self.status_channel_label.cget('text') == "Channel\nUnknown":
                 self.status_channel()
 
             # Check if serial number is unknown and update if necessary
@@ -236,10 +245,10 @@ class MainApp(ctk.CTk):
                 # Send command to sensor and read response
                 self.connection.sensor.write(b"\x02\x30\x35\x30\x30\x30\x37\x03")
                 response = self.connection.sensor.read(1024).decode()
-                print("Response: ", response)
                 configure = False
 
                 if response:
+                    # print("Response: ", response)
                     # Parse response and update values
                     self.sensor_status = 1
                     self.channel_1, self.channel_2, self.channel_3, self.channel_4, self.ppm_value, self.channel_6, self.temperature, self.air_pressure = response.split()[1:9]
@@ -250,15 +259,14 @@ class MainApp(ctk.CTk):
 
                     # Update labels with new values
                     self.serienummer_label.configure(text=f"Serie Nummer\n{self.serienummer}")
-                    self.ppm_meter_label.configure(text=f"PPM value\n\n{self.ppm_value}")
-                    configure = False
+                    self.ppm_meter_label.configure(text=f"PPM value\n{self.ppm_value}")
                 else:
                     # Set sensor status to unknown if no response
                     self.serienummer = "Unknown"
                     self.sensor_status = 0
                     self.serienummer_label.configure(text="Serie Nummer\nUnknown")
                     self.ppm_meter_label.configure(text="Sensor not found")
-                    self.status_channel_label.configure(text="Unknown")
+                    self.status_channel_label.configure(text="Channel\nUnknown")
                     configure = True
             except Exception as e:
                 # Handle errors in sensor communication
@@ -277,7 +285,7 @@ class MainApp(ctk.CTk):
         # Configurates the labels
         self.serienummer_label.configure(text="Serie Nummer\nUnknown")
         self.ppm_meter_label.configure(text="Sensor not found")
-        self.status_channel_label.configure(text="Unknown")
+        self.status_channel_label.configure(text="Channel\nUnknown")
 
     def flow_thread(self):
         # Continuous loop for flow communication
@@ -352,7 +360,7 @@ class MainApp(ctk.CTk):
         self.row_value = 0
 
         # Read folder configuration
-        self.folder = Chart.ConfigurationApp().readfile_value(4)
+        self.folder = readfile_value(8)
 
         # Get selected channel
         self.channel = self.channel_option.get()
@@ -516,9 +524,14 @@ class MainApp(ctk.CTk):
         app.protocol("WM_DELETE_WINDOW", lambda: (app.destroy(), self.switch_main_run(), self.thread(), self.reset_channel_info()))
         app.mainloop()
 
+    def open_sensor(self):
+        app = sensor()
+        app.protocol("WM_DELETE_WINDOW", app.destroy)  # Handle window close event
+        app.mainloop()
+
     def reset_channel_info(self):
         # Resets the channel info for the K1/K2/K3 or K4/K6 gets displayed correctly
-        self.status_channel_label.configure(text="Unknown")
+        self.status_channel_label.configure(text="Channel\nUnknown")
         self.ppm_value = None
 
     def switch_main_run(self):
@@ -587,14 +600,14 @@ class Configuration(ctk.CTk):
         # Get selected flow controller comport
         self.comport_flow = self.flow_com.get()
         value = self.comport_flow.split(" ")[0]
-        Chart.ConfigurationApp().text_config(6, value)
+        text_config(10, value)
         self.check()
 
     def get_sensor(self, event):
         # Get selected sensor comport
         self.comport_sensor = self.sensor_com.get()
         value = self.comport_sensor.split(" ")[0]
-        Chart.ConfigurationApp().text_config(5, value)
+        text_config(9, value)
         self.check()
 
     def button_switch(self):
@@ -651,7 +664,7 @@ class Configuration(ctk.CTk):
         # Get folder location
         self.Folder_Location = tk.filedialog.askdirectory()
         # Sets folder location
-        Chart.ConfigurationApp().text_config(4,self.Folder_Location)
+        text_config(8,self.Folder_Location)
 
     def set_background_color(self):
         # Sets the background color
@@ -666,6 +679,167 @@ class Configuration(ctk.CTk):
     def destroy(self):
         # Destroys the application
         super().destroy()
+
+class sensor(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.title("Sensor Chart")
+        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
+        self.resizable(width=False, height=False)
+        self.Place_Button_Y = 28
+        self.Place_Button_X = 140
+        self.Menu_One_Show = True
+        self.Menu_Two_Show = True
+        self.loading()
+
+    def loading(self):
+        self.Topbar()
+        self.chart()
+        threading.Thread(target=self.loop, daemon=True).start()
+
+    def Topbar(self):
+        self.Menu_One = ctk.CTkButton(self, text="Exit", command=self.Topbar_Menu_One)
+        self.Menu_One.grid(row=0, column=0, sticky="W")
+        self.Menu_Two = ctk.CTkButton(self, text="Settings", command=self.Topbar_Menu_Two)
+        self.Menu_Two.grid(row=0, column=0, padx=140, sticky="W")
+
+    def Topbar_Menu_One(self):
+        if self.Menu_One_Show:
+            self.Menu_Restart = ctk.CTkButton(self, text="Restart", command=self.restart)
+            self.Menu_Restart.place(x=0, y=self.Place_Button_Y)
+            self.Menu_Quit = ctk.CTkButton(self, text="Quit", command=self.destroy)
+            self.Menu_Quit.place(x=0, y=self.Place_Button_Y * 2)
+        else:
+            self.Menu_Restart.place_forget()
+            self.Menu_Quit.place_forget()
+        self.Menu_One_Show = not self.Menu_One_Show
+
+    def Topbar_Menu_Two(self):
+        if self.Menu_Two_Show:
+            self.Menu_Config = ctk.CTkButton(self, text="Config", command=self.open_settings)
+            self.Menu_Config.place(x=self.Place_Button_X, y=self.Place_Button_Y)
+        else:
+            self.Menu_Config.place_forget()
+            try:
+                self.select_type_sensor.destroy()
+                self.channel_option.destroy()
+            except Exception:
+                pass
+        self.Menu_Two_Show = not self.Menu_Two_Show
+
+    def Get_x_axis_values(self):
+        self.value_x_axis = int(readfile_value(3))
+        self.value_x_steps = int(readfile_value(4))
+        self.value_y_axis = int(readfile_value(5))
+        self.value_y_steps = int(readfile_value(6))
+
+    def chart(self):
+        self.Get_x_axis_values()
+        x_axis_values = tuple(num for num in range(self.value_x_steps, self.value_x_axis + 1, self.value_x_steps))
+        self.Masterchart = tkchart.LineChart(
+            master=self,
+            width=800,
+            height=400,
+            axis_size=5,
+            y_axis_section_count=int(self.value_y_axis/self.value_y_steps),
+            x_axis_section_count=int(self.value_x_axis / self.value_x_steps),
+            y_axis_label_count=10,
+            x_axis_label_count=10,
+            y_axis_data="Sensor meting",
+            x_axis_data="Seconden",
+            x_axis_values=x_axis_values,
+            y_axis_values=(0, self.value_y_axis),
+            y_axis_precision=0,
+            y_axis_section_color="#404040",
+            x_axis_section_color="#404040",
+            x_axis_font_color="#707070",
+            y_axis_font_color="#707070",
+            x_axis_data_font_color="lightblue",
+            y_axis_data_font_color="lightblue",
+            bg_color="#202020",
+            fg_color="#202020",
+            axis_color="#707070",
+            data_font_style=("Arial", 15, "bold"),
+            axis_font_style=("Arial", 10, "bold"),
+            x_space=40,
+            y_space=20,
+            x_axis_data_position="side",
+            y_axis_data_position="side"
+        )
+        self.Masterchart.grid(row=2, column=0, rowspan=3, padx=50, pady=50)
+        self.Drawline = tkchart.Line(master=self.Masterchart,
+                                       color="lightblue",
+                                       size=2)
+
+    def loop(self):
+        while True:
+            read = open("transfer.txt", "r")
+            self.ppm_value = read.readlines()
+            self.ppm_value = [float(''.join(map(str, self.ppm_value)))]
+            self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
+            time.sleep(1)
+
+    def open_settings(self):
+        app = ConfigurationApp()
+        app.protocol("WM_DELETE_WINDOW", app.destroy)
+        app.mainloop()
+
+    def restart(self):
+        super().destroy()
+        restart = sensor
+        restart.mainloop()
+
+    def destroy(self):
+        super().destroy()
+
+class ConfigurationApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
+        self.config_file = "config.txt"
+        self.X_as_middle = 800/2
+        self.resizable(width=False, height=False)
+        self.title("Configuration")
+        self.Titletext = None
+        self.config_option_name = None
+        self.loading()
+
+    def loading(self):
+        self.Frame_Input = ctk.CTkFrame(self)
+        self.Frame_Input.grid(row=1, column=0,padx=(self.X_as_middle-self.Frame_Input.winfo_reqwidth())/2,pady=40, stick="nsew")
+        self.Close_Save_Button = ctk.CTkButton(self, text="Save & Close", command=self.destroy)
+        self.Close_Save_Button.grid(row=2, column=0, pady=(0,20))
+        self.Title()
+        self.Section_Input()
+
+    def Title(self):
+        self.Titletext = ctk.CTkLabel(master=self, text="Configuration", font=ctk.CTkFont(size=20, weight="bold"))
+        self.Titletext.grid(row=0, column=0, sticky="N")
+
+    def Section_Input(self):
+        self.text_option_seconden = ctk.CTkLabel(master=self.Frame_Input, text="Seconden")
+        self.text_option_seconden.grid(row=1,column=0,padx=(20,0), pady=20,sticky="w")
+        self.text_option_seconden_step = ctk.CTkLabel(master=self.Frame_Input, text="Stappen tussenin")
+        self.text_option_seconden_step.grid(row=2,column=0,sticky="w")
+        self.config_option_seconden = ctk.CTkEntry(master=self.Frame_Input)
+        self.config_option_seconden.insert(0,readfile_value(5))
+        self.config_option_seconden.grid(row=1,column=1, padx=(10,20))
+        self.config_option_seconden.bind("<Return>", lambda event: text_config(5, self.config_option_seconden))
+        self.config_option_seconden_step = ctk.CTkEntry(master=self.Frame_Input)
+        self.config_option_seconden_step.insert(0,readfile_value(6))
+        self.config_option_seconden_step.grid(row=2,column=1)
+        self.config_option_seconden_step.bind("<Return>", lambda event: text_config(6, self.config_option_seconden_step))
+
+
+    def Close_Save(self):
+        text_config(2,self.config_option_seconden_step)
+        text_config(1, self.config_option_seconden)
+
+    def destroy(self):
+        self.Close_Save()
+        super().destroy()
+
+
 
 if __name__ == "__main__":
     # Initialize and run the application

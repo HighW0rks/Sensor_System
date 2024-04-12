@@ -4,6 +4,7 @@ import serial
 import time
 import threading
 import Chart
+from Config import readfile_value
 
 
 class Connection:
@@ -25,8 +26,8 @@ class Connection:
         self.initialize_connections()
 
     def file_check(self):
-        self.sensor_comport = Chart.ConfigurationApp().readfile_value(5)
-        self.flow_comport = Chart.ConfigurationApp().readfile_value(6)
+        self.sensor_comport = readfile_value(9)
+        self.flow_comport = readfile_value(10)
 
     def initialize_connections(self):
         threading.Thread(target=self.initialize_flow).start()
