@@ -1,9 +1,9 @@
 Chart sec: 5000
-Chart grid: 500
+Chart grid: 10
 Sensor sec: 10
-Sensor grid: 1
-Sensor PPM: 5000
-Sensor grid: 500
+Sensor grid: 2
+Sensor PPM: 20000
+Sensor grid: 1000
 Modes: False
 Folder: E:/Test Systeem/Sensor Excel
 Sensor: COM5

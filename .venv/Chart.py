@@ -10,15 +10,16 @@ import xlsxwriter
 import datetime
 import script
 import propar
+import os
 from Config import text_config, readfile_value
 
 class App(ctk.CTk):
-    def __init__(self,con,sn=None):
+    def __init__(self,con,sensor_type, sn):
         super().__init__()
         print("Test")
         self.c = con
+        self.sensor_type = sensor_type
         self.serienummer = sn
-        print(self.c)
         try:
             self.flow1 = self.c.flow_1
             self.flow2 = self.c.flow_2
@@ -65,7 +66,6 @@ class App(ctk.CTk):
         self.Chartline()
         self.Togglebutton()
         self.excel_button()
-        self.write_excel()
         self.loop_per_sec()
         self.loop()
 
@@ -228,15 +228,7 @@ class App(ctk.CTk):
     def excel_button(self):
         self.Stop_Excel_button = ctk.CTkButton(self, text="Stop saving data", command=self.toggle_excel)
         self.Start_Excel_button = ctk.CTkButton(self, text="Start saving data", command=self.toggle_excel)
-        self.Stop_Excel_button.grid(row=5, column=0, padx=30, pady=(10, 0))
         self.Start_Excel_button.grid(row=5, column=0, padx=30, pady=(10, 0))
-        self.start_excel()
-
-    def start_excel(self):
-        Location = readfile_value(8)
-        self.get_time()
-        self.workbook = xlsxwriter.Workbook(fr"{Location}\{self.serienummer}-{self.current_time}.xlsx")
-        self.worksheet = self.workbook.add_worksheet()
 
     def toggle_excel(self):
         self.status_excel = not self.status_excel
@@ -250,8 +242,23 @@ class App(ctk.CTk):
             self.start_excel()
         self.update()
 
+    def start_excel(self):
+        Location = readfile_value(8)
+        if self.sensor_type == "153":
+            sensor = "2SN100224"
+        elif self.sensor_type == "176":
+            sensor = "2SN1001073"
+        else:
+            sensor = "2SN1001098"
+        self.get_time()
+        if not os.path.exists(f"{Location}/{sensor}/{self.serienummer}"):
+            os.mkdir(f"{Location}/{sensor}/{self.serienummer}")
+        self.workbook = xlsxwriter.Workbook(fr"{Location}/{sensor}/{self.serienummer}/CustomReading-{self.current_time}.xlsx")
+        self.worksheet = self.workbook.add_worksheet()
+        threading.Thread(target=self.write_excel, daemon=True).start()
+
     def write_excel(self):
-        if not self.status_excel:
+        while self.status_excel == True:
             self.time += 1
             data_1 = float(self.bronkhorst_data_1)
             data_2 = float(self.bronkhorst_data_2)
@@ -273,7 +280,7 @@ class App(ctk.CTk):
             self.worksheet.write(self.time, 2, data_2)
             self.worksheet.write(self.time, 3, data_3)
             self.worksheet.write(self.time, 4, sensor)
-        self.after(1000, self.write_excel)
+            time.sleep(1)
 
 
     def Togglebutton(self):
@@ -440,7 +447,6 @@ class App(ctk.CTk):
         except Exception:
             pass
         super().destroy()
-        restart = App(self.c,self.serienummer)
         restart.mainloop()
 
     def destroy(self):

@@ -67,7 +67,7 @@ class MainApp(ctk.CTk):
     def __init__(self, con):
         super().__init__()
         self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")  # Set application icon
-        self.geometry("500x550")  # Set window geometry
+        self.geometry("500x600")  # Set window geometry
         self.resizable(width=False, height=False)  # Disable window resizing
         self.title("Skalar Saxon Tester")  # Set window title
         self.status_sensor_var = tk.IntVar(value=0)  # Variable to track sensor status
@@ -124,8 +124,10 @@ class MainApp(ctk.CTk):
         self.information_title.grid(row=2, column=0, columnspan=2, sticky="n", padx=(20, 0), pady=(20, 10))
         self.information_serienummer = ctk.CTkFrame(self)
         self.information_serienummer.grid(row=3, column=0, padx=(20, 0), sticky="n")
+        self.information_temperature = ctk.CTkFrame(self)
+        self.information_temperature.grid(row=3, column=0, columnspan=2, padx=(20, 0), sticky="n")
         self.information_channel_status = ctk.CTkFrame(self)
-        self.information_channel_status.grid(row=3, column=1, padx=(20, 0), sticky="n")
+        self.information_channel_status.grid(row=3, column=1, padx=(42, 0), sticky="n")
 
     def thread(self):
         # Start threads for sensor and flow
@@ -168,8 +170,9 @@ class MainApp(ctk.CTk):
                 else:
                     self.serienummer = str(read.decode()[5:13])
                 self.connection.sensor.write(b"\x02\x36\x38\x30\x30\x30\x63\x03")
-                read = self.connection.sensor.read(1024)
-                self.sensor_version = str(read.decode()[61:81])
+                read = self.connection.sensor.read(1024).decode()
+                self.sensor_version = str(read[61:81])
+                self.sensor_type = str(read.split()[4])
             except Exception as e:
                 print(e)
                 pass
@@ -193,7 +196,8 @@ class MainApp(ctk.CTk):
         self.serienummer_label.grid(row=0, column=0,padx=20,pady=10)
         self.status_channel_label = ctk.CTkLabel(master=self.information_channel_status, text="Channel\nUnknown")
         self.status_channel_label.grid(row=0, column=0, padx=20, pady=10)
-
+        self.temperature_label = ctk.CTkLabel(master=self.information_temperature, text="Temperature\nUnknown")
+        self.temperature_label.grid(row=0, column=0, padx=20, pady=10)
 
     def set_sensor(self):
         self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center", command=self.set_channel)
@@ -260,19 +264,21 @@ class MainApp(ctk.CTk):
                     # Update labels with new values
                     self.serienummer_label.configure(text=f"Serie Nummer\n{self.serienummer}")
                     self.ppm_meter_label.configure(text=f"PPM value\n{self.ppm_value}")
+                    self.temperature_label.configure(text=f"Temperature\n{self.temperature}")
                 else:
                     # Set sensor status to unknown if no response
                     self.serienummer = "Unknown"
                     self.sensor_status = 0
                     self.serienummer_label.configure(text="Serie Nummer\nUnknown")
                     self.ppm_meter_label.configure(text="Sensor not found")
+                    self.temperature_label.configure(text="Temperature\nUnknown")
                     self.status_channel_label.configure(text="Channel\nUnknown")
                     configure = True
             except Exception as e:
                 # Handle errors in sensor communication
                 self.serienummer = "Unknown"
                 self.sensor_status = 0
-                print(f"Error in sensor communication: {e}")
+                # print(f"Error in sensor communication: {e}")
                 configure = True
                 time.sleep(1)
 
@@ -285,6 +291,7 @@ class MainApp(ctk.CTk):
         # Configurates the labels
         self.serienummer_label.configure(text="Serie Nummer\nUnknown")
         self.ppm_meter_label.configure(text="Sensor not found")
+        self.temperature_label.configure(text="Temperature\nUnknown")
         self.status_channel_label.configure(text="Channel\nUnknown")
 
     def flow_thread(self):
@@ -303,7 +310,7 @@ class MainApp(ctk.CTk):
                     self.flow_status = False
             except Exception as e:
                 # Handle errors in flow communication
-                print(f"Error in flow communication: {e}")
+                # print(f"Error in flow communication: {e}")
                 self.flow_status = False
 
             # Schedule status update and sleep for 1 second
@@ -512,7 +519,7 @@ class MainApp(ctk.CTk):
 
     def open_chart(self):
         # Open the chart application
-        app = Chart.App(self.connection, self.serienummer)
+        app = Chart.App(self.connection,self.sensor_type, self.serienummer)
         app.protocol("WM_DELETE_WINDOW", app.destroy)  # Handle window close event
         app.mainloop()
 
@@ -683,13 +690,14 @@ class Configuration(ctk.CTk):
 class sensor(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("Sensor Chart")
+        self.title("PPM Chart")
         self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
         self.resizable(width=False, height=False)
         self.Place_Button_Y = 28
         self.Place_Button_X = 140
         self.Menu_One_Show = True
         self.Menu_Two_Show = True
+        self.main_run = True
         self.loading()
 
     def loading(self):
@@ -745,7 +753,7 @@ class sensor(ctk.CTk):
             x_axis_section_count=int(self.value_x_axis / self.value_x_steps),
             y_axis_label_count=10,
             x_axis_label_count=10,
-            y_axis_data="Sensor meting",
+            y_axis_data="PPM meting",
             x_axis_data="Seconden",
             x_axis_values=x_axis_values,
             y_axis_values=(0, self.value_y_axis),
@@ -769,15 +777,19 @@ class sensor(ctk.CTk):
         self.Masterchart.grid(row=2, column=0, rowspan=3, padx=50, pady=50)
         self.Drawline = tkchart.Line(master=self.Masterchart,
                                        color="lightblue",
-                                       size=2)
+                                       size=2,
+                                       fill="enabled")
 
     def loop(self):
-        while True:
+        while self.main_run:
             read = open("transfer.txt", "r")
             self.ppm_value = read.readlines()
             self.ppm_value = [float(''.join(map(str, self.ppm_value)))]
-            self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
-            time.sleep(1)
+            try:
+                self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
+            except Exception:
+                pass
+            time.sleep(self.value_x_steps)
 
     def open_settings(self):
         app = ConfigurationApp()
@@ -786,10 +798,10 @@ class sensor(ctk.CTk):
 
     def restart(self):
         super().destroy()
-        restart = sensor
-        restart.mainloop()
+        sensor().mainloop()
 
     def destroy(self):
+        self.main_run = False
         super().destroy()
 
 class ConfigurationApp(ctk.CTk):
@@ -817,23 +829,38 @@ class ConfigurationApp(ctk.CTk):
         self.Titletext.grid(row=0, column=0, sticky="N")
 
     def Section_Input(self):
-        self.text_option_seconden = ctk.CTkLabel(master=self.Frame_Input, text="Seconden")
-        self.text_option_seconden.grid(row=1,column=0,padx=(20,0), pady=20,sticky="w")
-        self.text_option_seconden_step = ctk.CTkLabel(master=self.Frame_Input, text="Stappen tussenin")
-        self.text_option_seconden_step.grid(row=2,column=0,sticky="w")
-        self.config_option_seconden = ctk.CTkEntry(master=self.Frame_Input)
-        self.config_option_seconden.insert(0,readfile_value(5))
-        self.config_option_seconden.grid(row=1,column=1, padx=(10,20))
-        self.config_option_seconden.bind("<Return>", lambda event: text_config(5, self.config_option_seconden))
-        self.config_option_seconden_step = ctk.CTkEntry(master=self.Frame_Input)
-        self.config_option_seconden_step.insert(0,readfile_value(6))
-        self.config_option_seconden_step.grid(row=2,column=1)
-        self.config_option_seconden_step.bind("<Return>", lambda event: text_config(6, self.config_option_seconden_step))
+        self.x_text_sec = ctk.CTkLabel(master=self.Frame_Input, text="X Seconde")
+        self.x_text_sec.grid(row=1, column=0, padx=(20,0), pady=20,sticky="w")
+        self.x_text_grid = ctk.CTkLabel(master=self.Frame_Input, text="X Grid lines")
+        self.x_text_grid.grid(row=2, column=0, padx=(20, 0))
+        self.x_seconden = ctk.CTkEntry(master=self.Frame_Input)
+        self.x_seconden.insert(0, readfile_value(3))
+        self.x_seconden.grid(row=1, column=1, padx=20)
+        self.x_seconden.bind("<Return>", lambda event: text_config(3, self.x_seconden))
+        self.x_grid = ctk.CTkEntry(master=self.Frame_Input)
+        self.x_grid.insert(0, readfile_value(4))
+        self.x_grid.grid(row=2, column=1, padx=20)
+        self.x_grid.bind("<Return>", lambda event: text_config(4, self.x_grid))
+
+        self.y_text_sec = ctk.CTkLabel(master=self.Frame_Input, text="Y Seconde")
+        self.y_text_sec.grid(row=3, column=0, padx=(20, 0), pady=20, sticky="w")
+        self.y_text_grid = ctk.CTkLabel(master=self.Frame_Input, text="Y Grid lines")
+        self.y_text_grid.grid(row=4, column=0, padx=(20, 0))
+        self.y_seconden = ctk.CTkEntry(master=self.Frame_Input)
+        self.y_seconden.insert(0,readfile_value(5))
+        self.y_seconden.grid(row=3,column=1, padx=20)
+        self.y_seconden.bind("<Return>", lambda event: text_config(5, self.y_seconden))
+        self.y_grid = ctk.CTkEntry(master=self.Frame_Input)
+        self.y_grid.insert(0,readfile_value(6))
+        self.y_grid.grid(row=4,column=1, padx=20)
+        self.y_grid.bind("<Return>", lambda event: text_config(6, self.y_grid))
 
 
     def Close_Save(self):
-        text_config(2,self.config_option_seconden_step)
-        text_config(1, self.config_option_seconden)
+        text_config(3, self.x_seconden)
+        text_config(4, self.x_grid)
+        text_config(5, self.y_seconden)
+        text_config(6, self.y_grid)
 
     def destroy(self):
         self.Close_Save()
