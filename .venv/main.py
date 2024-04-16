@@ -29,38 +29,92 @@ def terminate_existing_main_processes():
             # Check if the process name matches the main application
             proc.terminate()  # Terminate the process
 
+def file_check(con):
+    Location = readfile_value(8)
+    file_locations = [
+        f"{Location}",
+        f"{Location}/2SN100224",
+        f"{Location}/2SN1001073",
+        f"{Location}/2SN1001098",
+        f"{Location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
+        f"{Location}/2SN100224/Scripts",
+        f"{Location}/2SN100224/Scripts/Script Ch1.txt",
+        f"{Location}/2SN100224/Scripts/Script Ch2.txt",
+        f"{Location}/2SN100224/Scripts/Script Ch3.txt",
+        f"{Location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
+        f"{Location}/2SN1001073/Scripts",
+        f"{Location}/2SN1001073/Scripts/Script Ch1.txt",
+        f"{Location}/2SN1001073/Scripts/Script Ch2.txt",
+        f"{Location}/2SN1001073/Scripts/Script Ch3.txt",
+        f"{Location}/2SN1001073/Scripts/Script Ch4.txt",
+        f"{Location}/2SN1001073/Scripts/Script Ch6.txt",
+        f"{Location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
+        f"{Location}/2SN1001098/Scripts",
+        f"{Location}/2SN1001098/Scripts/Script Ch1.txt",
+        f"{Location}/2SN1001098/Scripts/Script Ch2.txt",
+        f"{Location}/2SN1001098/Scripts/Script Ch3.txt",
+        f"{Location}/2SN1001098/Scripts/Script Ch4.txt",
+        f"{Location}/2SN1001098/Scripts/Script Ch6.txt"
+    ]
+    for i in range(len(file_locations)):
+        file = file_locations[i]
+        if not os.path.exists(file):
+            if i == 0:
+                mainapp = File_check(con, file, Location)
+                mainapp.mainloop()
+                return
+            else:
+                mainapp = File_check(con, file)
+                mainapp.mainloop()
+                return
+    app = MainApp(con)  # Create an instance of the main application
+    app.mainloop()
+
+
+
 class File_check(ctk.CTk):
-    def __init__(self, con):
+    def __init__(self, con, file, Folder_Location = None):
         super().__init__()
-        self.geometry("250x100")  # Set window geometry
         self.resizable(width=False, height=False)  # Disable window resizing
         self.title("Error")  # Set window title
         self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")  # Set window icon
+        self.file = file
+        self.Folder_location = Folder_Location
         self.con = con  # Connection object
-        self.Location_check()  # Check folder location
+        self.background_color()
+        self.error()
 
-    def Location_check(self):
-        # Function to check if the required folder location exists
-        self.Error_text = ctk.CTkLabel(self, text="")  # Initialize error label
-        self.Location_button = ctk.CTkButton(self, text="Select a folder", command=self.Folder_Location_Config)
-        # Initialize button to select folder location
-
-        Location = readfile_value(8)  # Read folder location from configuration
-        if not os.path.exists(f"{Location}/2SN100224"):
-            # Check if the required folder does not exist
-            self.Error_text.configure(text="Error!\nNo folder location found")  # Display error message
-            self.Location_button.place(x=self.winfo_reqwidth() / 2 - self.Location_button.winfo_reqwidth() / 4, y=50)
-            # Place button in the center horizontally
-            self.update()  # Update the window
-            self.after(200, self.Location_check)  # Repeat the folder location check after 200 milliseconds
+    def background_color(self):
+        # Set application appearance mode based on configuration
+        with open("config.txt") as read:
+            for line in read:
+                if "Modes" in line:
+                    value = line.split(": ")[1].strip()
+        if value == "True":
+            ctk.set_appearance_mode("Light")  # Set light mode
         else:
-            self.destroy()  # Destroy the current window
-            app = MainApp(self.con)  # Create an instance of the main application
-            app.mainloop()  # Start the main application loop
+            ctk.set_appearance_mode("Dark")  # Set dark mode
+    def error(self):
+        self.text_frame = ctk.CTkFrame(self)
+        self.text_frame.grid(row=0, column=0, padx=20, pady=(20,0))
+        if self.file == self.Folder_location:
+            self.Error_text = ctk.CTkLabel(master=self.text_frame, text=f"The main folder is not found:\n{self.file}")
+            self.Error_text.grid(row=0, column=0, padx=20, pady=20)
+            self.Location_button = ctk.CTkButton(self, text="Select a folder", command=self.Folder_Location_Config)
+            self.Location_button.grid(row=1, column=0, padx=20, pady=(20,0))
+        else:
+            self.Error_text = ctk.CTkLabel(master=self.text_frame, text=f"File/Folder doesn't exist:\n{self.file}")
+            self.Error_text.grid(row=0, column=0, padx=20, pady=20)
+        self.restart_button = ctk.CTkButton(self, text="Continue...", command=self.destroy)
+        self.restart_button.grid(row=2,column=0, pady=(20,20))
 
     def Folder_Location_Config(self):
-        self.Folder_Location = tk.filedialog.askdirectory()
-        text_config(8,self.Folder_Location)
+        self.new_folder = tk.filedialog.askdirectory()
+        text_config(8,self.new_folder)
+
+    def destroy(self):
+        super().destroy()
+        file_check(self.con)
 
 
 class MainApp(ctk.CTk):
@@ -871,5 +925,4 @@ class ConfigurationApp(ctk.CTk):
 if __name__ == "__main__":
     # Initialize and run the application
     con = Connection()
-    mainapp = File_check(con)
-    mainapp.mainloop()
+    file_check(con)
