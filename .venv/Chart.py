@@ -5,7 +5,6 @@ import serial
 import tkchart
 import ctypes
 import time
-import main
 import xlsxwriter
 import datetime
 import script

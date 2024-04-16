@@ -1,4 +1,3 @@
-import main
 import propar
 import serial
 import time
