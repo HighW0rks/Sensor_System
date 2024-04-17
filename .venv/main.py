@@ -15,19 +15,13 @@ import tkinter.ttk as ttk
 import customtkinter as ctk
 import tkchart
 # Uncommon library
-import main
 from connection import Connection
 import Chart
 from Config import readfile_value, text_config
 import propar
 
-def terminate_existing_main_processes():
-    # Function to terminate existing instances of the main application process
-    for proc in psutil.process_iter(['pid', 'name']):
-        # Iterate through all running processes
-        if proc.info['name'] == 'Skalar Saxon Tester.exe':
-            # Check if the process name matches the main application
-            proc.terminate()  # Terminate the process
+execute_path = os.path.abspath(sys.argv[0])
+icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
 
 def file_check(con):
     Location = readfile_value(8)
@@ -60,11 +54,11 @@ def file_check(con):
         file = file_locations[i]
         if not os.path.exists(file):
             if i == 0:
-                mainapp = File_check(con, file, Location)
+                mainapp = FileApp(con, file, Location)
                 mainapp.mainloop()
                 return
             else:
-                mainapp = File_check(con, file)
+                mainapp = FileApp(con, file)
                 mainapp.mainloop()
                 return
     app = MainApp(con)  # Create an instance of the main application
@@ -72,12 +66,12 @@ def file_check(con):
 
 
 
-class File_check(ctk.CTk):
+class FileApp(ctk.CTk):
     def __init__(self, con, file, Folder_Location = None):
         super().__init__()
         self.resizable(width=False, height=False)  # Disable window resizing
         self.title("Error")  # Set window title
-        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")  # Set window icon
+        self.iconbitmap(icon)  # Set window icon
         self.file = file
         self.Folder_location = Folder_Location
         self.con = con  # Connection object
@@ -86,11 +80,7 @@ class File_check(ctk.CTk):
 
     def background_color(self):
         # Set application appearance mode based on configuration
-        with open("config.txt") as read:
-            for line in read:
-                if "Modes" in line:
-                    value = line.split(": ")[1].strip()
-        if value == "True":
+        if readfile_value(7) == "True":
             ctk.set_appearance_mode("Light")  # Set light mode
         else:
             ctk.set_appearance_mode("Dark")  # Set dark mode
@@ -120,7 +110,7 @@ class File_check(ctk.CTk):
 class MainApp(ctk.CTk):
     def __init__(self, con):
         super().__init__()
-        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")  # Set application icon
+        self.iconbitmap(icon)  # Set application icon
         self.geometry("500x600")  # Set window geometry
         self.resizable(width=False, height=False)  # Disable window resizing
         self.title("Skalar Saxon Tester")  # Set window title
@@ -135,19 +125,16 @@ class MainApp(ctk.CTk):
         self.time = 0  # Variable to store time
         self.row_value = 0  # Variable to store row value
         self.channel_option = None  # Variable to store selected channel option
-        self.serienummer = "Unknown"  # Variable to store serial number
+        self.sensor_type = None
         self.channel_status = "Unknown"  # Variable to store channel status
+        self.serienummer = "Unknown"
         self.background_color()  # Set application background color
         self.loading()  # Load application components
-        self.protocol("WM_DELETE_WINDOW", self.close_app)  # Define action on window close
+        self.protocol("WM_DELETE_WINDOW", terminate_existing_main_processes)  # Define action on window close
 
     def background_color(self):
         # Set application appearance mode based on configuration
-        with open("config.txt") as read:
-            for line in read:
-                if "Modes" in line:
-                    value = line.split(": ")[1].strip()
-        if value == "True":
+        if readfile_value(7) == "True":
             ctk.set_appearance_mode("Light")  # Set light mode
         else:
             ctk.set_appearance_mode("Dark")  # Set dark mode
@@ -185,51 +172,43 @@ class MainApp(ctk.CTk):
 
     def thread(self):
         # Start threads for sensor and flow
-        sensor_thread = threading.Thread(target=self.sensor_thread)
-        sensor_thread.daemon = True
-        sensor_thread.start()
-        flow_thread = threading.Thread(target=self.flow_thread)
-        flow_thread.daemon = True
-        flow_thread.start()
+        threading.Thread(target=self.sensor_thread, daemon=True).start()
+        threading.Thread(target=self.flow_thread, daemon=True).start()
 
 
     def buttons(self):
-        self.empty_button_frame = ctk.CTkLabel(master=self.frame_button, text="", height=0)
-        self.empty_button_frame.grid(row=0,column=0,padx=100)
+        ctk.CTkLabel(master=self.frame_button, text="", height=0).grid(row=0,column=0,padx=100)
         self.chart_button = ctk.CTkButton(master=self.frame_button, text="Chart", command=self.open_chart)
         self.chart_button.grid(row=1,column=0,pady=(0,15))
-        self.sensor_button = ctk.CTkButton(master=self.frame_button, text="Sensor", command=self.open_sensor)
-        self.sensor_button.grid(row=2, column=0, pady=(0,15))
-        self.config_button = ctk.CTkButton(master=self.frame_button, text="Config", command=self.open_config)
-        self.config_button.grid(row=3,column=0, pady=(0,15))
-        self.start_button = ctk.CTkButton(self, text="Start", width=300, height=100, command=self.start_program)
-        self.start_button.grid(row=6, column=0, columnspan=2, padx=(20,0),pady=(10,20), sticky="nsew")
+        ctk.CTkButton(master=self.frame_button, text="Sensor", command=self.open_sensor).grid(row=2, column=0, pady=(0,15))
+        ctk.CTkButton(master=self.frame_button, text="Config", command=self.open_config).grid(row=3,column=0, pady=(0,15))
+        self.start_button = ctk.CTkButton(self, text="Start", width=300, height=100, state="disabled", command=self.start_program).grid(row=6, column=0, columnspan=2, padx=(20,0),pady=(10,20), sticky="nsew")
         self.stop_button = ctk.CTkButton(self, text="Stop", width=300, height=100, command= lambda: self.start_stop(1))
 
     def status_info(self):
-        self.empty_status = ctk.CTkLabel(master=self.frame_status, text="",height=0).grid(row=0,column=0,padx=100)
+        ctk.CTkLabel(master=self.frame_status, text="",height=0).grid(row=0,column=0,padx=100)
         self.status_sensor = ctk.CTkCheckBox(master=self.frame_status, text="Sensor", state="disabled",variable=self.status_sensor_var)
         self.status_sensor.grid(row=1, column=0,padx=40,pady=(0,5),sticky="w")
         self.status_flow = ctk.CTkCheckBox(master=self.frame_status, text="Flow controller", state="disabled", variable=self.status_flow_var)
         self.status_flow.grid(row=2, column=0,padx=40,pady=(4,20),sticky="w")
 
     def sensor_info_con(self):
-        if self.main_run:
-            try:
-                self.connection.sensor.write(b"\x02\x30\x39\x30\x30\x34\x34\x30\x30\x30\x62\x03")
-                read = self.connection.sensor.read(1024)
-                # print ("Read SN: ", read)
-                if len(read) == 0 or len(read) > 24 :
-                    self.serienummer = "Unknown"
-                else:
-                    self.serienummer = str(read.decode()[5:13])
-                self.connection.sensor.write(b"\x02\x36\x38\x30\x30\x30\x63\x03")
-                read = self.connection.sensor.read(1024).decode()
-                self.sensor_version = str(read[61:81])
-                self.sensor_type = str(read.split()[4])
-            except Exception as e:
-                print(e)
-                pass
+        if self.connection.status_sensor == True:
+            if self.main_run:
+                try:
+                    self.connection.sensor.write(b"\x02\x30\x39\x30\x30\x34\x34\x30\x30\x30\x62\x03")
+                    read = self.connection.sensor.read(1024)
+                    if len(read) == 0 or len(read) > 24 :
+                        self.serienummer = "Unknown"
+                    else:
+                        self.serienummer = str(read.decode()[5:13])
+                    self.connection.sensor.write(b"\x02\x36\x38\x30\x30\x30\x63\x03")
+                    read = self.connection.sensor.read(1024).decode()
+                    self.sensor_version = str(read[61:81])
+                    self.sensor_type = str(read.split()[4])
+                except Exception as e:
+                    print("test1",e)
+                    pass
 
 
     def status_channel(self):
@@ -244,8 +223,7 @@ class MainApp(ctk.CTk):
 
 
     def sensor_info(self):
-        title = ctk.CTkLabel(master=self.information_title, text="Sensor Information", font=ctk.CTkFont(size=15,weight="bold"))
-        title.grid(row=0, column=0, padx=80, pady=5)
+        ctk.CTkLabel(master=self.information_title, text="Sensor Information", font=ctk.CTkFont(size=15,weight="bold")).grid(row=0, column=0, padx=80, pady=5)
         self.serienummer_label = ctk.CTkLabel(master=self.information_serienummer, text=f"Serie Nummer\n{self.serienummer}")
         self.serienummer_label.grid(row=0, column=0,padx=20,pady=10)
         self.status_channel_label = ctk.CTkLabel(master=self.information_channel_status, text="Channel\nUnknown")
@@ -260,13 +238,13 @@ class MainApp(ctk.CTk):
 
 
     def set_channel(self, event=None):
-        self.type_sensor = self.select_type_sensor.get()
-        if self.type_sensor == "V153":
+        type_sensor = self.select_type_sensor.get()
+        if type_sensor == "V153":
             channel_values = ["Ch1", "Ch2", "Ch3"]
             self.folder_location = "2SN100224"
             self.excel_file = "425 --- test Data QC 2SN100224.xlsx"
 
-        elif self.type_sensor == "V176":
+        elif type_sensor == "V176":
             channel_values = ["Ch1", "Ch2", "Ch3", "Ch4", "Ch6"]
             self.folder_location = "2SN1001073"
             self.excel_file = "425 --- test Data QC 2SN1001073.xlsx"
@@ -286,9 +264,6 @@ class MainApp(ctk.CTk):
         self.channel_option.set("Select a channel")
 
     def sensor_thread(self):
-        # Initial sensor information retrieval
-        self.sensor_info_con()
-
         # Continuous loop for sensor communication
         while self.main_run:
             # Check if channel label status is unknown and update if necessary
@@ -323,10 +298,6 @@ class MainApp(ctk.CTk):
                     # Set sensor status to unknown if no response
                     self.serienummer = "Unknown"
                     self.sensor_status = 0
-                    self.serienummer_label.configure(text="Serie Nummer\nUnknown")
-                    self.ppm_meter_label.configure(text="Sensor not found")
-                    self.temperature_label.configure(text="Temperature\nUnknown")
-                    self.status_channel_label.configure(text="Channel\nUnknown")
                     configure = True
             except Exception as e:
                 # Handle errors in sensor communication
@@ -392,8 +363,7 @@ class MainApp(ctk.CTk):
 
     def ppm_meter(self):
         # Create empty label frame for PPM meter
-        self.empty_ppm_frame = ctk.CTkLabel(master=self.frame_ppm, text="")
-        self.empty_ppm_frame.grid(row=0, column=0, padx=100)
+        ctk.CTkLabel(master=self.frame_ppm, text="").grid(row=0, column=0, padx=100)
 
         # Initialize PPM meter label
         self.ppm_meter_label = ctk.CTkLabel(master=self.frame_ppm, text="Connecting...")
@@ -401,11 +371,10 @@ class MainApp(ctk.CTk):
 
     def zero_point(self):
         # Create empty label frame for zero point
-        self.empty_zero_point_frame = ctk.CTkLabel(master=self.frame_zero_point, text="", height=0)
-        self.empty_zero_point_frame.grid(row=0, column=0, padx=100)
+        ctk.CTkLabel(master=self.frame_zero_point, text="", height=0).grid(row=0, column=0, padx=100)
 
         # Initialize zero point button
-        self.zero_point_button = ctk.CTkButton(master=self.frame_zero_point, text="Zero Point",command=self.send_zero_point_command)
+        self.zero_point_button = ctk.CTkButton(master=self.frame_zero_point, text="Zero Point", state="disabled", command=self.send_zero_point_command)
         self.zero_point_button.grid(row=1, column=0, pady=(0, 17))
 
     def send_zero_point_command(self):
@@ -430,7 +399,8 @@ class MainApp(ctk.CTk):
         self.start_excel()
 
         # Start reading script thread
-        self.read_script_thread()
+        threading.Thread(target=self.read_script, daemon=True).start()
+
 
     def start_excel(self):
         # Initialize Excel settings
@@ -466,20 +436,7 @@ class MainApp(ctk.CTk):
         self.worksheet['H1'] = 'Temperature'
         self.worksheet['I1'] = 'Air Pressure'
 
-        # Write Excel thread
-        self.write_excel_thread()
-
-    def write_excel_thread(self):
-        # Start thread for writing Excel data
-        thread = threading.Thread(target=self.write_excel)
-        thread.daemon = True
-        thread.start()
-
-    def read_script_thread(self):
-        # Start thread for reading script
-        thread = threading.Thread(target=self.read_script)
-        thread.daemon = True
-        thread.start()
+        threading.Thread(target=self.write_excel, daemon=True).start()
 
     def write_excel(self):
         # Continuous loop for writing Excel data
@@ -515,7 +472,6 @@ class MainApp(ctk.CTk):
                 # Check if end of file is reached
                 if not self.row_value < len(read_value):
                     print("End of file reached")
-                    self.running = False
                     # Save Excel file with timestamp
                     self.get_time()
                     if not os.path.exists(f"{self.folder}/{self.folder_location}/{self.serienummer}"):
@@ -599,10 +555,6 @@ class MainApp(ctk.CTk):
         # Switch the value of the main run flag
         self.main_run = not self.main_run
 
-    def close_app(self):
-        # Close the application
-        terminate_existing_main_processes()  # Terminate existing main processes
-
 
 class Configuration(ctk.CTk):
     def __init__(self, con, sensor):
@@ -610,7 +562,7 @@ class Configuration(ctk.CTk):
         self.con = con
         self.sensor = sensor
         self.title("Configuration")
-        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
+        self.iconbitmap(icon)
         self.option_add("*TCombobox*Listbox*Font", value=0)
         self.comport_sensor = None
         self.comport_flow = None
@@ -630,9 +582,6 @@ class Configuration(ctk.CTk):
         self.frame_folder = ctk.CTkFrame(self)
         self.frame_folder.grid(row=1, column=1)
 
-    def listen_comport(self):
-        # Get available serial ports
-        return serial.tools.list_ports.comports()
 
     def text(self):
         # Add labels and buttons
@@ -642,70 +591,50 @@ class Configuration(ctk.CTk):
 
     def combobox(self):
         # Create comboboxes for selecting serial ports
-        self.flow_com = ttk.Combobox(master=self.frame_comport, width=25, values=self.listen_comport(),font=(15))
+        self.flow_com = ttk.Combobox(master=self.frame_comport, width=25, values=serial.tools.list_ports.comports(),font=(15))
         self.flow_com.grid(row=1, column=0)
         self.flow_com.set("Select a comport")
-        self.flow_com.configure(font=(20))
-        self.sensor_com = ttk.Combobox(master=self.frame_comport, width=25, values=self.listen_comport(), font=(15))
+        self.sensor_com = ttk.Combobox(master=self.frame_comport, width=25, values=serial.tools.list_ports.comports(), font=(15))
         self.flow_com.bind('<<ComboboxSelected>>', self.get_flow)
         self.sensor_com.grid(row=1,column=1)
         self.sensor_com.set("Select a comport")
         self.sensor_com.bind('<<ComboboxSelected>>', self.get_sensor)
-
-    def check(self):
-        # Check if both comports are selected
-        if self.comport_flow != None and self.comport_sensor != None:
-            print("All good")
-
-    def get_flow(self, event):
-        # Get selected flow controller comport
-        self.comport_flow = self.flow_com.get()
-        value = self.comport_flow.split(" ")[0]
-        text_config(10, value)
-        self.check()
 
     def get_sensor(self, event):
         # Get selected sensor comport
         self.comport_sensor = self.sensor_com.get()
         value = self.comport_sensor.split(" ")[0]
         text_config(9, value)
-        self.check()
+
+    def get_flow(self, event):
+        # Get selected flow controller comport
+        self.comport_flow = self.flow_com.get()
+        value = self.comport_flow.split(" ")[0]
+        text_config(10, value)
 
     def button_switch(self):
         # Reads the config and makes a appearance switch
-        with open("config.txt", "r") as r:
-            self.read = r.readlines()
-            self.modes_bool = str(self.read[2].split(": ")[1].split("\n")[0])
-            dark_mode_state = ctk.BooleanVar(value=(self.modes_bool == "True"))
+        dark_mode_state = ctk.BooleanVar(value=(readfile_value(7) == "True"))
         self.dark_white_mode = ctk.CTkSwitch(master=self.frame_switch, text="Dark/Light mode", variable=dark_mode_state, command= self.set_dark_light_mode)
         self.dark_white_mode.grid(row=2, column=0, columnspan=2, padx=20, pady=20)
 
         # Reads the config and makes a channel switch
-        with open("config.txt", "r") as r:
-            self.read = r.readlines()
-            self.modes_bool = str(self.read[6].split(": ")[1].split("\n")[0])
-            channel_mode_state = ctk.BooleanVar(value=(self.modes_bool == "True"))
+        channel_mode_state = ctk.BooleanVar(value=(readfile_value(11) == "True"))
         self.channel_switch = ctk.CTkSwitch(master=self.frame_switch, text="K1/K2/K3 | K4/K6", variable=channel_mode_state, command=self.channel)
         self.channel_switch.grid(row=3, column=0, columnspan=2, pady=(0,20))
 
     def set_dark_light_mode(self):
-        # Reads the config file and sets the value to set the background color
-        with open("config.txt","r") as r:
-            value = r.readlines()[2].split(": ")[1].split("\n")[0]
-        if value == "True":
+        # Reads the config file and sets the value to set the background colo
+        if readfile_value(7) == "True":
             value = "False"
         else:
             value = "True"
-        with open("config.txt","w") as w:
-            self.read[2] = f"Modes: {value}\n"
-            w.writelines(self.read)
+        text_config(7, value)
         self.set_background_color()
 
     def channel(self):
         # Reads the config file and writes to the sensor to switch
-        with open("config.txt", "r") as file:
-            value = file.readlines()[6].split(": ")[1].split("\n")[0]
-        if value == "True":
+        if readfile_value(11) == "True":
             print("Switched from K4/K6 to K1/K2/K3")
             self.sensor.write(b"\x02\x38\x31\x30\x30\x30\x33\x62\x03")
             value = "False"
@@ -713,9 +642,7 @@ class Configuration(ctk.CTk):
             print("Switched from K1/K2/K3 to K4/K6")
             self.sensor.write(b"\x02\x38\x31\x30\x30\x31\x33\x61\x03")
             value = "True"
-        with open("config.txt", "w") as w:
-            self.read[6] = f"Channel: {value}\n"
-            w.writelines(self.read)
+        text_config(11, value)
 
     def directory(self):
         # Add button for selecting main folder
@@ -732,9 +659,6 @@ class Configuration(ctk.CTk):
         MainApp.background_color(ctk.CTk)
 
     def restart_app(self):
-        # Save configuration and restart application
-        with open("config.txt", "w") as w:
-            w.writelines(self.read)
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
     def destroy(self):
@@ -745,7 +669,7 @@ class sensor(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("PPM Chart")
-        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
+        self.iconbitmap(icon)
         self.resizable(width=False, height=False)
         self.Place_Button_Y = 28
         self.Place_Button_X = 140
@@ -836,9 +760,7 @@ class sensor(ctk.CTk):
 
     def loop(self):
         while self.main_run:
-            read = open("transfer.txt", "r")
-            self.ppm_value = read.readlines()
-            self.ppm_value = [float(''.join(map(str, self.ppm_value)))]
+            self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
             try:
                 self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
             except Exception:
@@ -861,8 +783,7 @@ class sensor(ctk.CTk):
 class ConfigurationApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
-        self.config_file = "config.txt"
+        self.iconbitmap(icon)
         self.X_as_middle = 800/2
         self.resizable(width=False, height=False)
         self.title("Configuration")
@@ -875,12 +796,9 @@ class ConfigurationApp(ctk.CTk):
         self.Frame_Input.grid(row=1, column=0,padx=(self.X_as_middle-self.Frame_Input.winfo_reqwidth())/2,pady=40, stick="nsew")
         self.Close_Save_Button = ctk.CTkButton(self, text="Save & Close", command=self.destroy)
         self.Close_Save_Button.grid(row=2, column=0, pady=(0,20))
-        self.Title()
+        ctk.CTkLabel(master=self, text="Configuration", font=ctk.CTkFont(size=20, weight="bold")).grid(row=0, column=0, sticky="N")
         self.Section_Input()
 
-    def Title(self):
-        self.Titletext = ctk.CTkLabel(master=self, text="Configuration", font=ctk.CTkFont(size=20, weight="bold"))
-        self.Titletext.grid(row=0, column=0, sticky="N")
 
     def Section_Input(self):
         self.x_text_sec = ctk.CTkLabel(master=self.Frame_Input, text="X Seconde")
@@ -920,6 +838,14 @@ class ConfigurationApp(ctk.CTk):
         self.Close_Save()
         super().destroy()
 
+
+def terminate_existing_main_processes():
+    # Function to terminate existing instances of the main application process
+    for proc in psutil.process_iter(['pid', 'name']):
+        # Iterate through all running processes
+        if proc.info['name'] == 'Skalar Saxon Tester.exe':
+            # Check if the process name matches the main application
+            proc.terminate()  # Terminate the process
 
 
 if __name__ == "__main__":

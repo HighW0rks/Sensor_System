@@ -41,7 +41,7 @@ class Connection:
         except Exception as e:
             self.status_flow = False
             print(f"Failed to initialize flow controllers: {e}")
-            time.sleep(1)
+            time.sleep(5)
             self.initialize_flow()
 
     def initialize_sensor(self):
@@ -57,9 +57,7 @@ class Connection:
                 self.status_sensor = False
                 print(f"Failed to initialize sensor: {e}")
                 self.last_error_time = time.time()
-            time.sleep(1)
-            if self.sensor is None:
-                self.initialize_sensor()
+            time.sleep(5)
 
     def close_sensor(self):
         if self.sensor is not None:

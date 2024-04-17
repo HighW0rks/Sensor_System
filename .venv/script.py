@@ -1,20 +1,27 @@
 import customtkinter as ctk
+from Config import readfile_value
 import time
 import Chart
+import os
+import sys
+
+execute_path = os.path.abspath(sys.argv[0])
+icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
+default_script = os.path.dirname(execute_path) + "/default_script.txt"
 
 class app(ctk.CTk):
 
     def __init__(self, artikel, channel):
         super().__init__()
         self.title(channel)
-        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
+        self.iconbitmap(icon)
         self.resizable(width=False, height=False)
         self.time_entry_array = []
         self.sensor_type = artikel
         self.script_channel = channel
         self.setpoint_value_entry_array = []
         self.channel_value_combobox_array = []
-        self.folder = Chart.ConfigurationApp().readfile_value(4)
+        self.folder = readfile_value(8)
         self.entries = []
         self.i = 0
         self.x = 0
@@ -43,7 +50,6 @@ class app(ctk.CTk):
                     self.Entry()
 
     def Entry(self):
-        print(len(self.entries))
         for self.i in range(len(self.entries)):
             if self.i < len(self.entries):
                 self.time_value = self.entries[self.i].split("; ")[0].split(". ")[1].strip()
@@ -60,7 +66,7 @@ class app(ctk.CTk):
         self.i += 1
         self.add_entry_button = ctk.CTkButton(self, text="Add a new row", command= self.new_entry)
         self.add_entry_button.grid(row=1, column=0, columnspan=2, pady=(0,5))
-        self.delete_button = ctk.CTkButton(self, text="Delete script", command=self.delete_script)
+        self.delete_button = ctk.CTkButton(self, text="Delete script", command= lambda: self.delete_script(True))
         self.delete_button.grid(row=2, column=0, pady=(0,5))
         self.reset_button = ctk.CTkButton(self, text="Reset script", command=self.confirm_reset)
         self.reset_button.grid(row=2, column=1, pady=(0,5))
@@ -99,30 +105,29 @@ class app(ctk.CTk):
         with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "w") as file:
             file.writelines(lines)
 
-    def delete_script(self):
+    def delete_script(self, x=False):
         with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "r") as file:
             lines = file.readlines()
-            print("Len: ",len(lines))
         for index in range(10000):
             for widget in self.scrollable_frame.grid_slaves(row=index):
-                print("Index: ",index)
                 widget.destroy()
-        with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "w") as write:
-            write.truncate()
+        if x == True:
+            with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt", "w") as write:
+                write.truncate()
         self.time_entry_array = []
         self.setpoint_value_entry_array = []
         self.channel_value_combobox_array = []
+        self.file_check()
 
     def confirm_reset(self):
-        confirm_dialog = Confirm(self)
-        confirm_dialog.mainloop()
+        Confirm(self).mainloop()
 
     def reset_script(self):
-        with open("default_script.txt","r") as read:
+        with open(default_script,"r") as read:
             default = read.readlines()
         with open(fr"{self.folder}\{self.sensor_type}\Scripts\Script {self.script_channel}.txt","w") as write:
             write.writelines(default)
-        self.file_check()
+        self.delete_script()
 
     def deletemessage(self, entry):
         entry.delete(0, ctk.END)

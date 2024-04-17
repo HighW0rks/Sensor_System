@@ -1,4 +1,8 @@
-config_file = "config.txt"
+import os
+import sys
+
+execute_path = os.path.abspath(sys.argv[0])
+config_file = os.path.dirname(execute_path) + r"\config.txt"
 
 def readfile_value(row):
     with open(config_file, "r") as read:

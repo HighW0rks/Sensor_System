@@ -1,5 +1,5 @@
-Chart sec: 5000
-Chart grid: 10
+Chart sec: 100
+Chart grid: 1
 Sensor sec: 10
 Sensor grid: 2
 Sensor PPM: 20000

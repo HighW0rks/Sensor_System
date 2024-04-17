@@ -10,12 +10,16 @@ import datetime
 import script
 import propar
 import os
+import sys
 from Config import text_config, readfile_value
+
+execute_path = os.path.abspath(sys.argv[0])
+icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
+
 
 class App(ctk.CTk):
     def __init__(self,con,sensor_type, sn):
         super().__init__()
-        print("Test")
         self.c = con
         self.sensor_type = sensor_type
         self.serienummer = sn
@@ -26,7 +30,7 @@ class App(ctk.CTk):
         except Exception:
             pass
         self.status_flow = self.c.status_flow
-        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
+        self.iconbitmap(icon)
         self.resizable(width=False, height=False)
         self.title("Chart System")
         self.command = b"\x02\x30\x35\x30\x30\x30\x37\x03"
@@ -58,9 +62,8 @@ class App(ctk.CTk):
         self.loading()
 
     def loading(self):
-        self.threat()
         self.Topbar()
-        self.load_text()
+        ctk.CTkLabel(text="Test system", master=self, font=ctk.CTkFont(size=15, weight="bold"), justify="center").grid(row=1, column=0, padx=50, pady=10)
         self.Masterchart()
         self.Chartline()
         self.Togglebutton()
@@ -68,32 +71,6 @@ class App(ctk.CTk):
         self.loop_per_sec()
         self.loop()
 
-    def threat(self):
-        self.connect_thread = threading.Thread(target=self.connection_saxon)
-        self.connect_thread.start()
-
-    def connection_saxon(self):
-        running = True
-        try:
-            self.serial = self.c.sensor
-            while running == True:
-                self.data_saxon()
-        except serial.serialutil.SerialException as e:
-            print("Error port not found", e)
-            running = False
-        except IndexError as e:
-            print("Error sensor not found", e)
-            running = False
-
-    def data_saxon(self):
-        try:
-            with open("transfer.txt", "r") as read:
-                self.sensor_data = str(read.read())
-            self.update()
-            time.sleep(0.5)
-        except serial.serialutil.SerialException as e:
-            print("Error port not found")
-            running = False
 
     def Topbar(self):
         self.Menu_One = ctk.CTkButton(self, text="Exit",command=self.Topbar_Menu_One)
@@ -131,7 +108,6 @@ class App(ctk.CTk):
                 pass
         self.Menu_Two_Show = not self.Menu_Two_Show
 
-
     def set_sensor(self):
         self.Menu_Script.place_forget()
         self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center", command=self.set_channel)
@@ -161,21 +137,12 @@ class App(ctk.CTk):
         self.channel_option.place(x=self.Place_Button_X, y=self.Place_Button_Y * 3)
         self.channel_option.set("Select a channel")
 
-    def load_text(self):
-        self.StartupLabel = ctk.CTkLabel(text="Test system", master=self, font=ctk.CTkFont(size=15, weight="bold"), justify="center")
-        self.StartupLabel.grid(row=1, column=0, padx=50, pady=10)
-
-    def Get_x_axis_values(self):
+    def Masterchart(self):
         self.value_x_axis = int(readfile_value(1))
         self.value_steps = int(readfile_value(2))
-
-    def Masterchart(self):
-        self.Get_x_axis_values()
         if self.value_x_axis < self.value_steps:
-            with open("config.txt", "w") as config_file:
-                config_file.write("Seconden: 100\n")
-                config_file.write("Stappen tussenin: 10\n")
-                config_file.write("Modes: False")
+            text_config(1, 100)
+            text_config(2, 10)
             self.value_x_axis = 100
             self.value_steps = 10
 
@@ -242,7 +209,6 @@ class App(ctk.CTk):
         self.update()
 
     def start_excel(self):
-        Location = readfile_value(8)
         if self.sensor_type == "153":
             sensor = "2SN100224"
         elif self.sensor_type == "176":
@@ -250,10 +216,17 @@ class App(ctk.CTk):
         else:
             sensor = "2SN1001098"
         self.get_time()
+        Location = readfile_value(8)
         if not os.path.exists(f"{Location}/{sensor}/{self.serienummer}"):
             os.mkdir(f"{Location}/{sensor}/{self.serienummer}")
         self.workbook = xlsxwriter.Workbook(fr"{Location}/{sensor}/{self.serienummer}/CustomReading-{self.current_time}.xlsx")
         self.worksheet = self.workbook.add_worksheet()
+        self.worksheet.write(0, 0, 'Time')
+        self.worksheet.set_column('A:A', 20)
+        self.worksheet.write(0, 1, 'Value 1')
+        self.worksheet.write(0, 2, 'Value 2')
+        self.worksheet.write(0, 3, 'Value 3')
+        self.worksheet.write(0, 4, 'PPM Value')
         threading.Thread(target=self.write_excel, daemon=True).start()
 
     def write_excel(self):
@@ -263,16 +236,9 @@ class App(ctk.CTk):
             data_2 = float(self.bronkhorst_data_2)
             data_3 = float(self.bronkhorst_data_3)
             try:
-                sensor = float(self.sensor_data)
+                sensor = float(open("transfer.txt", "r").read())
             except Exception:
-                sensor = str("Error")
-
-            self.worksheet.write(0, 0, 'Time')
-            self.worksheet.set_column('A:A', 20)
-            self.worksheet.write(0, 1, 'Value 1')
-            self.worksheet.write(0, 2, 'Value 2')
-            self.worksheet.write(0, 3, 'Value 3')
-            self.worksheet.write(0, 4, 'PPM Value')
+                sensor = "Error"
             self.get_time()
             self.worksheet.write(self.time, 0, self.current_time)
             self.worksheet.write(self.time, 1, data_1)
@@ -303,10 +269,13 @@ class App(ctk.CTk):
             self.Slider()
         else:
             for i in range(3):
-                self.sliders_var[i].grid_forget()
-                self.input_var[i].grid_forget()
-                self.arrow_up[i].grid_forget()
-                self.arrow_down[i].grid_forget()
+                try:
+                    self.sliders_var[i].grid_forget()
+                    self.input_var[i].grid_forget()
+                    self.arrow_up[i].grid_forget()
+                    self.arrow_down[i].grid_forget()
+                except Exception:
+                    pass
             self.sliders_var = []
             self.input_var = []
             self.arrow_up = []
@@ -316,22 +285,17 @@ class App(ctk.CTk):
     def Slider(self):
         if self.status_flow:
             for i in range(3):
-                if i == 0:
-                    flow = self.flow1.readParameter(8) / 320
-                elif i == 1:
-                    flow = self.flow2.readParameter(8) / 320
-                else:
-                    flow = self.flow3.readParameter(8) / 320
+                flow = [self.flow1.readParameter(8) / 320, self.flow2.readParameter(8) / 320, self.flow3.readParameter(8) / 320]
                 arrow_up = ctk.CTkButton(self, text="🔼", width=20, height=20, font=ctk.CTkFont(size=20),command=lambda index=i: self.arrow_up_command(index))
                 arrow_up.grid(row=3, column=4 + i)
                 slider = ctk.CTkSlider(self, width=10, height=200, from_=0, to=100, progress_color="blue",orientation="vertical",command=lambda event, index=i: self.set_entry_value(index))
                 slider.grid(row=4, column=4 + i)
-                slider.set(flow)
+                slider.set(flow[i])
                 arrow_down = ctk.CTkButton(self, text="🔽", width=20, height=20, font=ctk.CTkFont(size=20),command=lambda index=i: self.arrow_down_command(index))
                 arrow_down.grid(row=5, column=4 + i)
                 entry = ctk.CTkEntry(self)
                 entry.grid(row=2, column=4 + i, sticky="s")
-                entry.insert(0, flow)
+                entry.insert(0, flow[i])
                 entry.bind("<KeyRelease>", lambda event, index=i: self.set_slider_value(index))
 
                 self.sliders_var.append(slider)
@@ -346,24 +310,15 @@ class App(ctk.CTk):
             except Exception:
                 value = 0
         self.sliders_var[i].set(value)
-        if i == 0:
-            self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
-        elif i == 1:
-            self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
-        else:
-            self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
-
+        flow = [self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))]
+        flow[i]
     def set_entry_value(self, i, value=None, event=None):
         self.input_var[i].delete(0, ctk.END)
         if value == None:
             value = self.sliders_var[i].get()
         self.input_var[i].insert(0, "{:.1f}".format(value))
-        if i == 0:
-            self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
-        elif i == 1:
-            self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
-        else:
-            self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+        flow = [self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))]
+        flow[i]
 
     def arrow_up_command(self, i):
         try:
@@ -392,21 +347,15 @@ class App(ctk.CTk):
     def loop(self):
         if self.status_start_stop:
             if self.status_flow:
-                data_1 = float(self.bronkhorst_data_1)
-                self.Masterchart.show_data(data=[data_1], line=self.Drawline_1)
-                data_2 = float(self.bronkhorst_data_2)
-                self.Masterchart.show_data(data=[data_2], line=self.Drawline_2)
-                data_3 = float(self.bronkhorst_data_3)
-                self.Masterchart.show_data(data=[data_3], line=self.Drawline_3)
+                self.Masterchart.show_data(data=[float(self.bronkhorst_data_1)], line=self.Drawline_1)
+                self.Masterchart.show_data(data=[float(self.bronkhorst_data_2)], line=self.Drawline_2)
+                self.Masterchart.show_data(data=[float(self.bronkhorst_data_3)], line=self.Drawline_3)
         self.after(self.value_steps*1000, self.loop)
 
     def loop_per_sec(self):
         if self.status_start_stop:
             if self.status_flow:
                 parameter_value_1 = self.flow1.readParameter(8)
-                self.test = self.c.sensor
-
-                # print(parameter_value_1, " | ",self.sensor_data)
                 if parameter_value_1 is not None:
                     self.bronkhorst_data_1 = parameter_value_1 / 32000 * 100
                 else:
@@ -446,7 +395,7 @@ class App(ctk.CTk):
         except Exception:
             pass
         super().destroy()
-        restart.mainloop()
+        App(self.c,self.sensor_type,self.serienummer).mainloop()
 
     def destroy(self):
         try:
@@ -455,7 +404,6 @@ class App(ctk.CTk):
                 self.workbook.close()
         except Exception:
             pass
-        print("Destroy")
         super().destroy()
 
 
@@ -463,13 +411,11 @@ class App(ctk.CTk):
 class ConfigurationApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.iconbitmap("skalar_analytical_bv_logo_Zoy_icon.ico")
+        self.iconbitmap(icon)
         self.config_file = "config.txt"
         self.X_as_middle = 800/2
         self.resizable(width=False, height=False)
         self.title("Configuration")
-        self.Titletext = None
-        self.config_option_name = None
         self.loading()
 
     def loading(self):
@@ -477,12 +423,8 @@ class ConfigurationApp(ctk.CTk):
         self.Frame_Input.grid(row=1, column=0,padx=(self.X_as_middle-self.Frame_Input.winfo_reqwidth())/2,pady=40, stick="nsew")
         self.Close_Save_Button = ctk.CTkButton(self, text="Save & Close", command=self.destroy)
         self.Close_Save_Button.grid(row=2, column=0, pady=(0,20))
-        self.Title()
+        ctk.CTkLabel(master=self, text="Configuration", font=ctk.CTkFont(size=20, weight="bold")).grid(row=0, column=0, sticky="N")
         self.Section_Input()
-
-    def Title(self):
-        self.Titletext = ctk.CTkLabel(master=self, text="Configuration", font=ctk.CTkFont(size=20, weight="bold"))
-        self.Titletext.grid(row=0, column=0, sticky="N")
 
     def Section_Input(self):
         self.text_option_seconden = ctk.CTkLabel(master=self.Frame_Input, text="Seconden")
@@ -506,7 +448,3 @@ class ConfigurationApp(ctk.CTk):
     def destroy(self):
         self.Close_Save()
         super().destroy()
-
-
-if __name__ == '__main__':
-    App().mainloop()
