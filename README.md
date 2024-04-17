@@ -1,6 +1,6 @@
 # Skalar Saxon Tester
 
-The Saxon Sensor GUI is a graphical user interface (GUI) application designed for use with Saxon sensors and Bronkhorst flow controllers. This application enables users to monitor and control various parameters such as parts per million (PPM), temperature, and air pressure. It provides real-time data visualization and interactive controls for efficient management of the sensor and flow controller.
+The Saxon Tester is a graphical user interface (GUI) application designed for use with Saxon sensors and Bronkhorst flow controllers. This application enables users to monitor and control various parameters such as parts per million (PPM), temperature, and air pressure. It provides real-time data visualization and interactive controls for efficient management of the sensor and flow controller.
 
 ## Features
 **- PPM Measurement:** The GUI accurately measures and displays the PPM value detected by the Saxon sensor.
