@@ -1,12 +1,45 @@
 # Sensor Script Configuration GUI
 
-This repository contains a Python GUI application built using CustomTkinter for configuring and managing scripts associated with different channels of a sensor. The application allows users to interactively add, modify, and delete script entries, providing a user-friendly interface for script management.
+The Saxon Sensor GUI is a graphical user interface (GUI) application designed for use with Saxon sensors and Bronkhorst flow controllers. This application enables users to monitor and control various parameters such as parts per million (PPM), temperature, and air pressure. It provides real-time data visualization and interactive controls for efficient management of the sensor and flow controller.
 
 ## Features
-- Script Configuration: Users can configure scripts for different sensor channels by specifying time, setpoint values, and channel selection.
+**- PPM Measurement:** The GUI accurately measures and displays the PPM value detected by the Saxon sensor.
 
-- Monitor the levels of the Bronkhorst valve values or set the values with sliders.
+**- Real-time Data Visualization:** Users can visualize sensor data through intuitive charts and graphs.
 
-- Connection tester to see if the Bronkhorst or Saxon is connected correctly.
+**- Flow Control:** The application allows users to control the flow of air or CO2 using Bronkhorst flow controllers. Sliders and entry boxes facilitate easy adjustment of flow rates.
 
-- Select the desired sensor channel from the dropdown menu.
+**- Custom Configuration:** Customizable configurations are available for both the Saxon sensor and the charts, providing flexibility to adapt to different environments and requirements.
+
+**- Script Execution:** Users can initiate scripts via a prominent start button within the main application. These scripts are editable using a built-in custom script editor, enabling users to tailor functionality to their specific needs.
+
+
+## Usage
+1. Launch the application by running main.py.
+2. Configure the Saxon sensor and Bronkhorst flow controller settings as required.
+3. Use the sliders or entry boxes to adjust flow rates manually.
+4. Monitor PPM values and other sensor data in real-time through the GUI.
+5. Execute custom scripts by clicking the start button and edit scripts using the built-in script editor.
+
+## Library
+```
+pip install tkchart
+```
+```
+pip install tkinter
+```
+```
+pip install customtkinter
+```
+```
+pip install pyserial
+```
+```
+pip install openpyxl
+```
+```
+pip install xlsxwriter
+```
+```
+pip install bronkhorst_propar
+```
