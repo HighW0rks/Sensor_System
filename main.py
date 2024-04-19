@@ -57,7 +57,10 @@ class UpdateApp(ctk.CTk):
 
     def app(self):
         ctk.CTkLabel(self, text="New update available!").grid(row=0, column=0, sticky="n")
-        ctk.CTkButton(self, text="Update now!", command= lambda: threading.Thread(target=self.start_update, daemon=True).start).grid(row=1, column=0, sticky="n")
+        ctk.CTkButton(self, text="Update now!", command=self.thread).grid(row=1, column=0, sticky="n")
+
+    def thread(self):
+        threading.Thread(target=self.start_update, daemon=True).start()
 
     def start_update(self):
         try:
