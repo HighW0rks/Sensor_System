@@ -1,6 +1,7 @@
 # Standard library
 import datetime
 import os
+import shutil
 import sys
 import threading
 import time
@@ -13,16 +14,64 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import customtkinter as ctk
 import tkchart
+import requests
+import zipfile
 # Uncommon library
 from connection import Connection
 import Chart
 from Config import readfile_value, text_config
+import propar
 
 execute_path = os.path.abspath(sys.argv[0])
 icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
 
 
-def file_check(con):
+def update():
+    response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/releases/latest")
+    if response.status_code == 200:
+        latest_release = response.json()
+    else:
+        print("Failed to retrieve the latest release.")
+        return
+    if response:
+        response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/tags")
+        if response.status_code == 200:
+            latest_tag = response.json()[0]['name']
+            print(latest_tag)
+        else:
+            file_check()
+        if latest_tag != readfile_value(12):
+            UpdateApp().mainloop()
+        else:
+            file_check()
+
+
+class UpdateApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.geometry("300x300")
+        self.title("Update")
+        self.resizable(height=False, width=False)
+        self.iconbitmap(icon)
+        self.app()
+
+    def app(self):
+        ctk.CTkLabel(self, text="New update available!").grid(row=0, column=0, sticky="n")
+        ctk.CTkButton(self, text="Update now!", command=self.start_update).grid(row=1, column=0, sticky="n")
+
+    def start_update(self):
+        try:
+            # Replace 'Update.exe' with the full path if it's not in the current directory
+            os.system('Update.exe')
+        except Exception as e:
+            print(f"Error: {e}")
+            for i in range(5):
+                print("App will destroy in 5 sec:")
+                print(i + 1)
+            terminate_existing_main_processes()
+
+
+def file_check():
     location = readfile_value(8)
     file_locations = [
         f"{location}",
@@ -60,6 +109,7 @@ def file_check(con):
                 mainapp = FileApp(con, file)
                 mainapp.mainloop()
                 return
+    con = Connection()
     app = MainApp(con)  # Create an instance of the main application
     app.mainloop()
 
@@ -277,7 +327,8 @@ class MainApp(ctk.CTk):
         self.temperature_label.grid(row=0, column=0, padx=20, pady=10)
 
     def set_sensor(self):
-        self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center",command=self.set_channel)
+        self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center",
+                                                  command=self.set_channel)
         self.select_type_sensor.grid(row=4, column=0, columnspan=2, padx=(20, 0), pady=(20, 0))
         self.select_type_sensor.set("Select a sensor")
 
@@ -926,7 +977,7 @@ class ConfigurationApp(ctk.CTk):
         text_config(6, self.y_grid)
 
     def destroy(self):
-        self.close_save()
+        self.Close_Save()
         super().destroy()
 
 
@@ -941,5 +992,4 @@ def terminate_existing_main_processes():
 
 if __name__ == "__main__":
     # Initialize and run the application
-    con = Connection()
-    file_check(con)
+    update()
