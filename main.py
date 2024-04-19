@@ -63,6 +63,7 @@ class UpdateApp(ctk.CTk):
         try:
             # Replace 'Update.exe' with the full path if it's not in the current directory
             os.system('Update.exe')
+            terminate_existing_main_processes()
         except Exception as e:
             print(f"Error: {e}")
             for i in range(5):
@@ -988,6 +989,8 @@ def terminate_existing_main_processes():
         if proc.info['name'] == 'Skalar Saxon Tester.exe':
             # Check if the process name matches the main application
             proc.terminate()  # Terminate the process
+        if proc.info['name'] == 'Skalar Saxon Tester Console.exe':
+            proc.terminate()
 
 
 if __name__ == "__main__":
