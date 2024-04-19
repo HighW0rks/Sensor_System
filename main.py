@@ -115,14 +115,13 @@ def file_check():
 
 
 class FileApp(ctk.CTk):
-    def __init__(self, con, file, folder_location=None):
+    def __init__(self, file, folder_location=None):
         super().__init__()
         self.resizable(width=False, height=False)  # Disable window resizing
         self.title("Error")  # Set window title
         self.iconbitmap(icon)  # Set window icon
         self.file = file
         self.Folder_location = folder_location
-        self.con = con  # Connection object
         self.text_frame = None
         self.Location_button = None
         self.Error_text = None
@@ -158,7 +157,7 @@ class FileApp(ctk.CTk):
 
     def destroy(self):
         super().destroy()
-        file_check(self.con)
+        file_check()
 
 
 class MainApp(ctk.CTk):
