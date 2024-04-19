@@ -57,16 +57,12 @@ class UpdateApp(ctk.CTk):
 
     def app(self):
         ctk.CTkLabel(self, text="New update available!").grid(row=0, column=0, sticky="n")
-        ctk.CTkButton(self, text="Update now!", command=self.thread).grid(row=1, column=0, sticky="n")
-
-    def thread(self):
-        threading.Thread(target=self.start_update, daemon=True).start()
+        ctk.CTkButton(self, text="Update now!", command=self.start_update).grid(row=1, column=0, sticky="n")
 
     def start_update(self):
         try:
             # Replace 'Update.exe' with the full path if it's not in the current directory
             os.system('Update.exe')
-            terminate_existing_main_processes()
         except Exception as e:
             print(f"Error: {e}")
             for i in range(5):
@@ -106,11 +102,11 @@ def file_check():
         file = file_locations[i]
         if not os.path.exists(file):
             if i == 0:
-                mainapp = FileApp(con, file, location)
+                mainapp = FileApp(file, location)
                 mainapp.mainloop()
                 return
             else:
-                mainapp = FileApp(con, file)
+                mainapp = FileApp(file)
                 mainapp.mainloop()
                 return
     con = Connection()
@@ -909,7 +905,7 @@ class SensorApp(ctk.CTk):
 
     def restart(self):
         super().destroy()
-        sensor().mainloop()
+        SensorApp().mainloop()
 
     def destroy(self):
         self.main_run = False
