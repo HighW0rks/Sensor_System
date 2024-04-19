@@ -1,6 +1,6 @@
 import os
 import requests
-import shutil
+import psutil
 import zipfile
 import sys
 import shutil
@@ -14,6 +14,7 @@ from Config import text_config, readfile_value
 
 
 def update():
+    terminate_existing_main_processes()
     response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/releases/latest")
     if response.status_code == 200:
         latest_release = response.json()
@@ -88,6 +89,17 @@ def parse_files_changed(body_text):
             else:
                 break
     return files_changed
+
+
+def terminate_existing_main_processes():
+    # Function to terminate existing instances of the main application process
+    for proc in psutil.process_iter(['pid', 'name']):
+        # Iterate through all running processes
+        if proc.info['name'] == 'Skalar Saxon Tester.exe':
+            # Check if the process name matches the main application
+            proc.terminate()  # Terminate the process
+        if proc.info['name'] == 'Skalar Saxon Tester Console.exe':
+            proc.terminate()
 
 # Call the update function
 update()
