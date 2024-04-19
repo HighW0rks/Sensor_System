@@ -9,3 +9,4 @@ Folder: E:/Test Systeem/Sensor Excel
 Sensor: COM5
 Flow: COM3
 Channel: True
+Version: V1.0.3
