@@ -140,6 +140,7 @@ class FileApp(ctk.CTk):
     def error(self):
         self.text_frame = ctk.CTkFrame(self)
         self.text_frame.grid(row=0, column=0, padx=20, pady=(20, 0))
+        print("Length Folder Location",len(self.Folder_location))
         if self.file == self.Folder_location or len(self.Folder_location) < 4:
             self.Error_text = ctk.CTkLabel(master=self.text_frame, text=f"The main folder is not found:\n{self.file}")
             self.Error_text.grid(row=0, column=0, padx=20, pady=20)
