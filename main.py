@@ -51,7 +51,16 @@ class UpdateApp(ctk.CTk):
         self.tag = latest_tag
         self.resizable(height=False, width=False)
         self.iconbitmap(icon)
+        self.background_color()
         self.app()
+
+    def background_color(self):
+        # Set application appearance mode based on configuration
+        if readfile_value(7) == "False":
+            ctk.set_appearance_mode("Light")  # Set light mode
+        else:
+            ctk.set_appearance_mode("Dark")  # Set dark mode
+
 
     def app(self):
         ctk.CTkLabel(self, text="New update available!").grid(row=0, column=0, sticky="s")
@@ -77,43 +86,43 @@ class UpdateApp(ctk.CTk):
 
 
 def file_check():
-    location = readfile_value(8)
-    file_locations = [
-        f"{location}",
-        f"{location}/2SN100224",
-        f"{location}/2SN1001073",
-        f"{location}/2SN1001098",
-        f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
-        f"{location}/2SN100224/Scripts",
-        f"{location}/2SN100224/Scripts/Script Ch1.txt",
-        f"{location}/2SN100224/Scripts/Script Ch2.txt",
-        f"{location}/2SN100224/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
-        f"{location}/2SN1001073/Scripts",
-        f"{location}/2SN1001073/Scripts/Script Ch1.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch2.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch4.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch6.txt",
-        f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
-        f"{location}/2SN1001098/Scripts",
-        f"{location}/2SN1001098/Scripts/Script Ch1.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch2.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch4.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch6.txt"
-    ]
-    for i in range(len(file_locations)):
-        file = file_locations[i]
-        if not os.path.exists(file):
-            if i == 0:
-                mainapp = FileApp(file, True)
-                mainapp.mainloop()
-                return
-            else:
-                mainapp = FileApp(file)
-                mainapp.mainloop()
-                return
+    # location = readfile_value(8)
+    # file_locations = [
+    #     f"{location}",
+    #     f"{location}/2SN100224",
+    #     f"{location}/2SN1001073",
+    #     f"{location}/2SN1001098",
+    #     f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
+    #     f"{location}/2SN100224/Scripts",
+    #     f"{location}/2SN100224/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN100224/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN100224/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
+    #     f"{location}/2SN1001073/Scripts",
+    #     f"{location}/2SN1001073/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch4.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch6.txt",
+    #     f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
+    #     f"{location}/2SN1001098/Scripts",
+    #     f"{location}/2SN1001098/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch4.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch6.txt"
+    # ]
+    # for i in range(len(file_locations)):
+    #     file = file_locations[i]
+    #     if not os.path.exists(file):
+    #         if i == 0:
+    #             mainapp = FileApp(file, True)
+    #             mainapp.mainloop()
+    #             return
+    #         else:
+    #             mainapp = FileApp(file)
+    #             mainapp.mainloop()
+    #             return
     con = Connection()
     app = MainApp(con)  # Create an instance of the main application
     app.mainloop()
@@ -137,7 +146,7 @@ class FileApp(ctk.CTk):
 
     def background_color(self):
         # Set application appearance mode based on configuration
-        if readfile_value(7) == "True":
+        if readfile_value(7) == "False":
             ctk.set_appearance_mode("Light")  # Set light mode
         else:
             ctk.set_appearance_mode("Dark")  # Set dark mode
@@ -227,7 +236,6 @@ class MainApp(ctk.CTk):
         self.seconden_value = None
         self.percentage_value = None
         self.channel_value = None
-
         self.channel_status = "Unknown"  # Variable to store channel status
         self.serienummer = "Unknown"
         self.background_color()  # Set application background color
@@ -653,10 +661,11 @@ class MainApp(ctk.CTk):
 
     def background_color(self):
         # Set application appearance mode based on configuration
-        if readfile_value(7) == "True":
+        if readfile_value(7) == "False":
             ctk.set_appearance_mode("Light")  # Set light mode
         else:
             ctk.set_appearance_mode("Dark")  # Set dark mode
+
 
     @staticmethod
     def open_sensor():
@@ -740,7 +749,7 @@ class Configuration(ctk.CTk):
 
     def button_switch(self):
         # Reads the config and makes an appearance switch
-        dark_mode_state = ctk.BooleanVar(value=(readfile_value(7) == "True"))
+        dark_mode_state = ctk.BooleanVar(value=(readfile_value(7) == "False"))
         self.dark_white_mode = ctk.CTkSwitch(master=self.frame_switch, text="Dark/Light mode", variable=dark_mode_state,
                                              command=self.background_color)
         self.dark_white_mode.grid(row=2, column=0, columnspan=2, padx=20, pady=20)
