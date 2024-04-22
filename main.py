@@ -38,23 +38,26 @@ def update():
         else:
             file_check()
         if latest_tag != readfile_value(12):
-            UpdateApp().mainloop()
+            UpdateApp(latest_tag).mainloop()
         else:
             file_check()
 
 
 class UpdateApp(ctk.CTk):
-    def __init__(self):
+    def __init__(self, latest_tag):
         super().__init__()
         self.geometry("300x300")
         self.title("Update")
+        self.tag = latest_tag
         self.resizable(height=False, width=False)
         self.iconbitmap(icon)
         self.app()
 
     def app(self):
-        ctk.CTkLabel(self, text="New update available!").grid(row=0, column=0, sticky="n")
-        ctk.CTkButton(self, text="Update now!", command=self.start_update).grid(row=1, column=0, sticky="n")
+        ctk.CTkLabel(self, text="New update available!").grid(row=0, column=0, sticky="s")
+        ctk.CTkLabel(self, text=f"{readfile_value(12)}                {self.tag}").grid(row=1, column=0, sticky="s")
+        ctk.CTkLabel(self, text="➞", font=ctk.CTkFont(size=25)).place(x=133, y=28)
+        ctk.CTkButton(self, text="Update", command=self.start_update, width=250, height=40, font=ctk.CTkFont(size=20)).grid(row=2, column=0,padx=20, pady=20,sticky="n")
 
     def start_update(self):
         try:
