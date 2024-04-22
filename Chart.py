@@ -27,7 +27,8 @@ class App(ctk.CTk):
             self.flow1 = self.c.flow_1
             self.flow2 = self.c.flow_2
             self.flow3 = self.c.flow_3
-        except Exception:
+        except Exception as e:
+            print(e)
             pass
         self.status_flow = self.c.status_flow
         self.iconbitmap(icon)
@@ -310,15 +311,24 @@ class App(ctk.CTk):
             except Exception:
                 value = 0
         self.sliders_var[i].set(value)
-        flow = [self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))]
-        flow[i]
+        if i == 0:
+            self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+        elif i == 1:
+            self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+        else:
+            self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+
     def set_entry_value(self, i, value=None, event=None):
         self.input_var[i].delete(0, ctk.END)
         if value == None:
             value = self.sliders_var[i].get()
         self.input_var[i].insert(0, "{:.1f}".format(value))
-        flow = [self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))]
-        flow[i]
+        if i == 0:
+            self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+        elif i == 1:
+            self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
+        else:
+            self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))
 
     def arrow_up_command(self, i):
         try:
