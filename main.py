@@ -578,7 +578,7 @@ class MainApp(ctk.CTk):
                     self.workbook.save(self.save_location)
                     # Stop program
                     self.start_stop(1)
-                    validate()
+                    self.open_validate()
                     return
                 else:
                     # Parse script values
@@ -800,7 +800,6 @@ class validate(ctk.CTk):
         self.iconbitmap(icon)
         self.file_location = file
         self.channel = channel
-
         self.read_excel()
 
     def read_excel(self):
