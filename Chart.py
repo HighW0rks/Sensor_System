@@ -18,7 +18,7 @@ icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico
 
 
 class App(ctk.CTk):
-    def __init__(self, con, sensor_type, sn):
+    def __init__(self,con,sensor_type, sn):
         super().__init__()
         self.c = con
         self.sensor_type = sensor_type
@@ -27,8 +27,7 @@ class App(ctk.CTk):
             self.flow1 = self.c.flow_1
             self.flow2 = self.c.flow_2
             self.flow3 = self.c.flow_3
-        except Exception as e:
-            print(e)
+        except Exception:
             pass
         self.status_flow = self.c.status_flow
         self.iconbitmap(icon)
@@ -64,8 +63,7 @@ class App(ctk.CTk):
 
     def loading(self):
         self.Topbar()
-        ctk.CTkLabel(text="Test system", master=self, font=ctk.CTkFont(size=15, weight="bold"), justify="center").grid(
-            row=1, column=0, padx=50, pady=10)
+        ctk.CTkLabel(text="Test system", master=self, font=ctk.CTkFont(size=15, weight="bold"), justify="center").grid(row=1, column=0, padx=50, pady=10)
         self.Masterchart()
         self.Chartline()
         self.Togglebutton()
@@ -73,18 +71,19 @@ class App(ctk.CTk):
         self.loop_per_sec()
         self.loop()
 
+
     def Topbar(self):
-        self.Menu_One = ctk.CTkButton(self, text="Exit", command=self.Topbar_Menu_One)
-        self.Menu_One.grid(row=0, column=0, sticky="W")
+        self.Menu_One = ctk.CTkButton(self, text="Exit",command=self.Topbar_Menu_One)
+        self.Menu_One.grid(row=0,column=0, sticky="W")
         self.Menu_Two = ctk.CTkButton(self, text="Settings", command=self.Topbar_Menu_Two)
-        self.Menu_Two.grid(row=0, column=0, padx=140, sticky="W")
+        self.Menu_Two.grid(row=0,column=0, padx=140, sticky="W")
 
     def Topbar_Menu_One(self):
         if self.Menu_One_Show:
             self.Menu_Restart = ctk.CTkButton(self, text="Restart", command=self.restart)
             self.Menu_Restart.place(x=0, y=self.Place_Button_Y)
             self.Menu_Quit = ctk.CTkButton(self, text="Quit", command=self.destroy)
-            self.Menu_Quit.place(x=0, y=self.Place_Button_Y * 2)
+            self.Menu_Quit.place(x=0, y=self.Place_Button_Y*2)
         else:
             self.Menu_Restart.place_forget()
             self.Menu_Quit.place_forget()
@@ -97,7 +96,7 @@ class App(ctk.CTk):
             self.Menu_Config = ctk.CTkButton(self, text="Config", command=self.open_settings)
             self.Menu_Config.place(x=self.Place_Button_X, y=self.Place_Button_Y * 2)
             self.Menu_Script = ctk.CTkButton(self, text="Script", command=self.set_sensor)
-            self.Menu_Script.place(x=self.Place_Button_X, y=self.Place_Button_Y * 3)
+            self.Menu_Script.place(x=self.Place_Button_X, y=self.Place_Button_Y*3)
         else:
             self.Menu_Config.place_forget()
             self.Menu_Sliders.place_forget()
@@ -111,8 +110,7 @@ class App(ctk.CTk):
 
     def set_sensor(self):
         self.Menu_Script.place_forget()
-        self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center",
-                                                  command=self.set_channel)
+        self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center", command=self.set_channel)
         self.select_type_sensor.place(x=self.Place_Button_X, y=self.Place_Button_Y * 3)
         self.select_type_sensor.set("Select a sensor")
 
@@ -131,11 +129,11 @@ class App(ctk.CTk):
             channel_values = ["Ch1", "Ch2", "Ch3", "Ch4", "Ch6"]
             self.sensor_artikel = "2SN1001098"
 
+
         if self.channel_option is not None:
             self.channel_option.destroy()
 
-        self.channel_option = ctk.CTkComboBox(self, values=channel_values, justify="center",
-                                              command=lambda event: self.open_script())
+        self.channel_option = ctk.CTkComboBox(self, values=channel_values, justify="center", command= lambda event: self.open_script())
         self.channel_option.place(x=self.Place_Button_X, y=self.Place_Button_Y * 3)
         self.channel_option.set("Select a channel")
 
@@ -148,14 +146,14 @@ class App(ctk.CTk):
             self.value_x_axis = 100
             self.value_steps = 10
 
-        x_axis_values = tuple(num for num in range(self.value_steps, self.value_x_axis + 1, self.value_steps))
+        x_axis_values = tuple(num for num in range(self.value_steps, self.value_x_axis+1, self.value_steps))
         self.Masterchart = tkchart.LineChart(
             master=self,
             width=800,
             height=400,
             axis_size=5,
             y_axis_section_count=10,
-            x_axis_section_count=int(self.value_x_axis / self.value_steps),
+            x_axis_section_count=int(self.value_x_axis/self.value_steps),
             y_axis_label_count=10,
             x_axis_label_count=10,
             y_axis_data="Sensor meting",
@@ -201,11 +199,11 @@ class App(ctk.CTk):
     def toggle_excel(self):
         self.status_excel = not self.status_excel
         if self.status_excel:
-            self.Start_Excel_button.grid(row=5, column=0, padx=30, pady=(10, 0))
+            self.Start_Excel_button.grid(row=5, column=0, padx=30, pady=(10,0))
             self.Stop_Excel_button.grid_forget()
             self.workbook.close()
         else:
-            self.Stop_Excel_button.grid(row=5, column=0, padx=30, pady=(10, 0))
+            self.Stop_Excel_button.grid(row=5, column=0, padx=30, pady=(10,0))
             self.Start_Excel_button.grid_forget()
             self.start_excel()
         self.update()
@@ -221,8 +219,7 @@ class App(ctk.CTk):
         Location = readfile_value(8)
         if not os.path.exists(f"{Location}/{sensor}/{self.serienummer}"):
             os.mkdir(f"{Location}/{sensor}/{self.serienummer}")
-        self.workbook = xlsxwriter.Workbook(
-            fr"{Location}/{sensor}/{self.serienummer}/CustomReading-{self.current_time}.xlsx")
+        self.workbook = xlsxwriter.Workbook(fr"{Location}/{sensor}/{self.serienummer}/CustomReading-{self.current_time}.xlsx")
         self.worksheet = self.workbook.add_worksheet()
         self.worksheet.write(0, 0, 'Time')
         self.worksheet.set_column('A:A', 20)
@@ -249,6 +246,7 @@ class App(ctk.CTk):
             self.worksheet.write(self.time, 3, data_3)
             self.worksheet.write(self.time, 4, sensor)
             time.sleep(1)
+
 
     def Togglebutton(self):
         self.pausebutton = ctk.CTkButton(self, text="Stop", command=self.toggle_status)
@@ -286,19 +284,14 @@ class App(ctk.CTk):
 
     def Slider(self):
         if self.status_flow:
-            flow = [self.flow1.readParameter(8) / 320, self.flow2.readParameter(8) / 320,
-                    self.flow3.readParameter(8) / 320]
             for i in range(3):
-                arrow_up = ctk.CTkButton(self, text="🔼", width=20, height=20, font=ctk.CTkFont(size=20),
-                                         command=lambda index=i: self.arrow_up_command(index))
+                flow = [self.flow1.readParameter(8) / 320, self.flow2.readParameter(8) / 320, self.flow3.readParameter(8) / 320]
+                arrow_up = ctk.CTkButton(self, text="🔼", width=20, height=20, font=ctk.CTkFont(size=20),command=lambda index=i: self.arrow_up_command(index))
                 arrow_up.grid(row=3, column=4 + i)
-                slider = ctk.CTkSlider(self, width=10, height=200, from_=0, to=100, progress_color="blue",
-                                       orientation="vertical",
-                                       command=lambda event, index=i: self.set_entry_value(index))
+                slider = ctk.CTkSlider(self, width=10, height=200, from_=0, to=100, progress_color="blue",orientation="vertical",command=lambda event, index=i: self.set_entry_value(index))
                 slider.grid(row=4, column=4 + i)
                 slider.set(flow[i])
-                arrow_down = ctk.CTkButton(self, text="🔽", width=20, height=20, font=ctk.CTkFont(size=20),
-                                           command=lambda index=i: self.arrow_down_command(index))
+                arrow_down = ctk.CTkButton(self, text="🔽", width=20, height=20, font=ctk.CTkFont(size=20),command=lambda index=i: self.arrow_down_command(index))
                 arrow_down.grid(row=5, column=4 + i)
                 entry = ctk.CTkEntry(self)
                 entry.grid(row=2, column=4 + i, sticky="s")
@@ -310,29 +303,22 @@ class App(ctk.CTk):
                 self.arrow_up.append(arrow_up)
                 self.arrow_down.append(arrow_down)
 
-    def set_slider_value(self, i, value=None, event=None):
+    def set_slider_value(self, i, value = None, event=None):
         if value == None:
             try:
                 value = float(self.input_var[i].get())
             except Exception:
                 value = 0
         self.sliders_var[i].set(value)
-        flow = [self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),
-                self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),
-                self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))]
+        flow = [self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))]
         flow[i]
-        print("set_slider_value ", i)
-
     def set_entry_value(self, i, value=None, event=None):
         self.input_var[i].delete(0, ctk.END)
         if value == None:
             value = self.sliders_var[i].get()
         self.input_var[i].insert(0, "{:.1f}".format(value))
-        flow = [self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),
-                self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),
-                self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))]
+        flow = [self.flow1.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow2.writeParameter(9, "{:.0f}".format(value / 100 * 32000)),self.flow3.writeParameter(9, "{:.0f}".format(value / 100 * 32000))]
         flow[i]
-        print("set_entry_value ", i)
 
     def arrow_up_command(self, i):
         try:
@@ -343,6 +329,7 @@ class App(ctk.CTk):
         self.set_entry_value(i, value)
         self.set_slider_value(i, value)
 
+
     def arrow_down_command(self, i):
         try:
             value = float(self.input_var[i].get())
@@ -351,6 +338,7 @@ class App(ctk.CTk):
         value -= 0.1
         self.set_entry_value(i, value)
         self.set_slider_value(i, value)
+
 
     def get_time(self):
         self.current_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -362,7 +350,7 @@ class App(ctk.CTk):
                 self.Masterchart.show_data(data=[float(self.bronkhorst_data_1)], line=self.Drawline_1)
                 self.Masterchart.show_data(data=[float(self.bronkhorst_data_2)], line=self.Drawline_2)
                 self.Masterchart.show_data(data=[float(self.bronkhorst_data_3)], line=self.Drawline_3)
-        self.after(self.value_steps * 1000, self.loop)
+        self.after(self.value_steps*1000, self.loop)
 
     def loop_per_sec(self):
         if self.status_start_stop:
@@ -407,7 +395,7 @@ class App(ctk.CTk):
         except Exception:
             pass
         super().destroy()
-        App(self.c, self.sensor_type, self.serienummer).mainloop()
+        App(self.c,self.sensor_type,self.serienummer).mainloop()
 
     def destroy(self):
         try:
@@ -419,43 +407,42 @@ class App(ctk.CTk):
         super().destroy()
 
 
+
 class ConfigurationApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.iconbitmap(icon)
         self.config_file = "config.txt"
-        self.X_as_middle = 800 / 2
+        self.X_as_middle = 800/2
         self.resizable(width=False, height=False)
         self.title("Configuration")
         self.loading()
 
     def loading(self):
         self.Frame_Input = ctk.CTkFrame(self)
-        self.Frame_Input.grid(row=1, column=0, padx=(self.X_as_middle - self.Frame_Input.winfo_reqwidth()) / 2, pady=40,
-                              stick="nsew")
+        self.Frame_Input.grid(row=1, column=0,padx=(self.X_as_middle-self.Frame_Input.winfo_reqwidth())/2,pady=40, stick="nsew")
         self.Close_Save_Button = ctk.CTkButton(self, text="Save & Close", command=self.destroy)
-        self.Close_Save_Button.grid(row=2, column=0, pady=(0, 20))
-        ctk.CTkLabel(master=self, text="Configuration", font=ctk.CTkFont(size=20, weight="bold")).grid(row=0, column=0,
-                                                                                                       sticky="N")
+        self.Close_Save_Button.grid(row=2, column=0, pady=(0,20))
+        ctk.CTkLabel(master=self, text="Configuration", font=ctk.CTkFont(size=20, weight="bold")).grid(row=0, column=0, sticky="N")
         self.Section_Input()
 
     def Section_Input(self):
         self.text_option_seconden = ctk.CTkLabel(master=self.Frame_Input, text="Seconden")
-        self.text_option_seconden.grid(row=1, column=0, padx=(20, 0), pady=20, sticky="w")
+        self.text_option_seconden.grid(row=1,column=0,padx=(20,0), pady=20,sticky="w")
         self.text_option_seconden_step = ctk.CTkLabel(master=self.Frame_Input, text="Stappen tussenin")
-        self.text_option_seconden_step.grid(row=2, column=0, sticky="w")
+        self.text_option_seconden_step.grid(row=2,column=0,sticky="w")
         self.config_option_seconden = ctk.CTkEntry(master=self.Frame_Input)
-        self.config_option_seconden.insert(0, readfile_value(1))
-        self.config_option_seconden.grid(row=1, column=1, padx=(10, 20))
+        self.config_option_seconden.insert(0,readfile_value(1))
+        self.config_option_seconden.grid(row=1,column=1, padx=(10,20))
         self.config_option_seconden.bind("<Return>", lambda event: text_config(1, self.config_option_seconden))
         self.config_option_seconden_step = ctk.CTkEntry(master=self.Frame_Input)
-        self.config_option_seconden_step.insert(0, readfile_value(2))
-        self.config_option_seconden_step.grid(row=2, column=1)
-        self.config_option_seconden_step.bind("<Return>",
-                                              lambda event: text_config(2, self.config_option_seconden_step))
+        self.config_option_seconden_step.insert(0,readfile_value(2))
+        self.config_option_seconden_step.grid(row=2,column=1)
+        self.config_option_seconden_step.bind("<Return>", lambda event: text_config(2, self.config_option_seconden_step))
+
 
     def Close_Save(self):
-        text_config(2, self.config_option_seconden_step)
+        text_config(2,self.config_option_seconden_step)
         text_config(1, self.config_option_seconden)
 
     def destroy(self):
