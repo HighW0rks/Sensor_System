@@ -1,7 +1,6 @@
 # Standard library
 import datetime
 import os
-import shutil
 import sys
 import threading
 import time
@@ -15,12 +14,10 @@ import tkinter.ttk as ttk
 import customtkinter as ctk
 import tkchart
 import requests
-import zipfile
 # Uncommon library
 from connection import Connection
 import Chart
 from Config import readfile_value, text_config
-import propar
 
 execute_path = os.path.abspath(sys.argv[0])
 icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
@@ -102,12 +99,14 @@ def file_check():
         file = file_locations[i]
         if not os.path.exists(file):
             if i == 0:
-                mainapp = FileApp(file, location)
+                mainapp = FileApp(file, True)
                 mainapp.mainloop()
+                print("test1")
                 return
             else:
                 mainapp = FileApp(file)
                 mainapp.mainloop()
+                print("test2")
                 return
     con = Connection()
     app = MainApp(con)  # Create an instance of the main application
@@ -115,13 +114,13 @@ def file_check():
 
 
 class FileApp(ctk.CTk):
-    def __init__(self, file, folder_location=None):
+    def __init__(self, file, main_folder=False):
         super().__init__()
         self.resizable(width=False, height=False)  # Disable window resizing
         self.title("Error")  # Set window title
         self.iconbitmap(icon)  # Set window icon
         self.file = file
-        self.Folder_location = folder_location
+        self.main_folder = main_folder
         self.text_frame = None
         self.Location_button = None
         self.Error_text = None
@@ -138,10 +137,10 @@ class FileApp(ctk.CTk):
             ctk.set_appearance_mode("Dark")  # Set dark mode
 
     def error(self):
+        print("Error start")
         self.text_frame = ctk.CTkFrame(self)
         self.text_frame.grid(row=0, column=0, padx=20, pady=(20, 0))
-        print("Length Folder Location",len(self.Folder_location))
-        if self.file == self.Folder_location or len(self.Folder_location) < 4:
+        if self.main_folder:
             self.Error_text = ctk.CTkLabel(master=self.text_frame, text=f"The main folder is not found:\n{self.file}")
             self.Error_text.grid(row=0, column=0, padx=20, pady=20)
             self.Location_button = ctk.CTkButton(self, text="Select a folder", command=self.folder_location_config)
