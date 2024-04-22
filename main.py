@@ -6,6 +6,7 @@ import threading
 import time
 # Third-Party library
 import openpyxl
+import xlwings
 import psutil
 import serial
 import serial.tools.list_ports
@@ -46,7 +47,6 @@ def update():
 class UpdateApp(ctk.CTk):
     def __init__(self, latest_tag):
         super().__init__()
-        self.geometry("300x300")
         self.title("Update")
         self.tag = latest_tag
         self.resizable(height=False, width=False)
@@ -58,6 +58,7 @@ class UpdateApp(ctk.CTk):
         ctk.CTkLabel(self, text=f"{readfile_value(12)}                {self.tag}").grid(row=1, column=0, sticky="s")
         ctk.CTkLabel(self, text="➞", font=ctk.CTkFont(size=25)).place(x=133, y=28)
         ctk.CTkButton(self, text="Update", command=self.start_update, width=250, height=40, font=ctk.CTkFont(size=20)).grid(row=2, column=0,padx=20, pady=20,sticky="n")
+        ctk.CTkButton(self, text="skip update", command=self.skip).grid(row=2, column=0, pady=(80,20), sticky="s")
 
     def start_update(self):
         try:
@@ -69,6 +70,10 @@ class UpdateApp(ctk.CTk):
                 print("App will destroy in 5 sec:")
                 print(i + 1)
             terminate_existing_main_processes()
+
+    def skip(self):
+        self.destroy()
+        file_check()
 
 
 def file_check():
@@ -104,12 +109,10 @@ def file_check():
             if i == 0:
                 mainapp = FileApp(file, True)
                 mainapp.mainloop()
-                print("test1")
                 return
             else:
                 mainapp = FileApp(file)
                 mainapp.mainloop()
-                print("test2")
                 return
     con = Connection()
     app = MainApp(con)  # Create an instance of the main application
@@ -571,10 +574,11 @@ class MainApp(ctk.CTk):
                     self.get_time()
                     if not os.path.exists(f"{self.folder}/{self.folder_location}/{self.serienummer}"):
                         os.mkdir(f"{self.folder}/{self.folder_location}/{self.serienummer}")
-                    self.workbook.save(
-                        f"{self.folder}/{self.folder_location}/{self.serienummer}/{self.channel}_{self.current_time}.xlsx")
+                    self.save_location = f"{self.folder}/{self.folder_location}/{self.serienummer}/{self.channel}_{self.current_time}.xlsx"
+                    self.workbook.save(self.save_location)
                     # Stop program
                     self.start_stop(1)
+                    validate()
                     return
                 else:
                     # Parse script values
@@ -639,8 +643,12 @@ class MainApp(ctk.CTk):
         self.main_run = False  # Set main run flag to False
         app = Configuration(self.connection, self.connection.sensor)
         # Handle window close event, switch main run flag, and start thread on exit
-        app.protocol("WM_DELETE_WINDOW",
-                     lambda: (app.destroy(), self.switch_main_run(), self.thread(), self.reset_channel_info()))
+        app.protocol("WM_DELETE_WINDOW",lambda: (app.destroy(), self.switch_main_run(), self.thread(), self.reset_channel_info()))
+        app.mainloop()
+
+    def open_validate(self):
+        app = validate(self.save_location, self.channel)
+        app.protocol("WM_DELETE_WINDOW", app.destroy)  # Handle window close event
         app.mainloop()
 
     def background_color(self):
@@ -783,6 +791,51 @@ class Configuration(ctk.CTk):
         # Destroys the application
         super().destroy()
 
+
+class validate(ctk.CTk):
+    def __init__(self, file, channel):
+        super().__init__()
+        self.title("Validate")
+        self.resizable(width=False, height=False)
+        self.iconbitmap(icon)
+        self.file_location = file
+        self.channel = channel
+
+        self.read_excel()
+
+    def read_excel(self):
+        workbook = xlwings.Book(self.file_location)
+        sheet = workbook.sheets["Sheet1"]
+        if self.channel == "Ch1":
+            corr = sheet.range('D27').value
+            slope = sheet.range('D28').value
+        elif self.channel == "Ch2":
+            corr = sheet.range('D57').value
+            slope = sheet.range('D58').value
+        elif self.channel == "Ch3":
+            corr = sheet.range('D78').value
+            slope = sheet.range('D79').value
+        elif self.channel == "Ch4":
+            corr = sheet.range('D108').value
+            slope = sheet.range('D109').value
+        else:
+            corr =sheet.range('D127').value
+            slope = sheet.range('D128').value
+
+        ctk.CTkLabel(self, text=corr).grid(row=0, column=0, padx=10, sticky="nw")
+        ctk.CTklabel(self, text=slope).grid(row=1, column=0, padx=10, sticky="nw")
+        if corr > float(0.99):
+            ctk.CTkLabel(self, text="Corr passed").grid(row=0, column=1, padx=10, sticky="nw")
+        else:
+            ctk.CTkLabel(self, text="Corr failed").grid(row=0, column=1 , padx=10, sticky="nw")
+        if slope > float(0.99):
+            ctk.CTkLabel(self, text="Slope passed").grid(row=1, colomn=0, padx=10, sticky="nw")
+        else:
+            ctk.CTkLabel(self, text="Slope failed").grid(row=1, column=1, padx=10, sticky="nw")
+
+    def destroy(self):
+        # Destroys the application
+        super().destroy()
 
 class SensorApp(ctk.CTk):
     def __init__(self):
