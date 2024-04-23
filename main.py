@@ -22,9 +22,10 @@ from Config import readfile_value, text_config
 
 execute_path = os.path.abspath(sys.argv[0])
 icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
-
+version = None
 
 def update():
+    global version
     response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/releases/latest")
     if response.status_code == 200:
         latest_release = response.json()
@@ -35,7 +36,7 @@ def update():
         response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/tags")
         if response.status_code == 200:
             latest_tag = response.json()[0]['name']
-            print(latest_tag)
+            version = latest_tag
         else:
             file_check()
         if latest_tag != readfile_value(12):
@@ -177,6 +178,7 @@ class FileApp(ctk.CTk):
 
 class MainApp(ctk.CTk):
     def __init__(self, con):
+        global version
         super().__init__()
         self.iconbitmap(icon)  # Set application icon
         self.geometry("500x600")  # Set window geometry
@@ -192,6 +194,8 @@ class MainApp(ctk.CTk):
         self.flow_status = 0  # Variable to store flow status
         self.time = 0  # Variable to store time
         self.row_value = 0  # Variable to store row value
+        self.version = version
+        ctk.CTkLabel(self, text=self.version).place(x=455, y=573)
         self.channel_option = None  # Variable to store selected channel option
         self.sensor_type = None
         self.frame_button = None
@@ -340,12 +344,11 @@ class MainApp(ctk.CTk):
         self.temperature_label.grid(row=0, column=0, padx=20, pady=10)
 
     def set_sensor(self):
-        self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center",
-                                                  command=self.set_channel)
+        self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center",command=self.set_channel)
         self.select_type_sensor.grid(row=4, column=0, columnspan=2, padx=(20, 0), pady=(20, 0))
         self.select_type_sensor.set("Select a sensor")
 
-    def set_channel(self):
+    def set_channel(self, event=None):
         type_sensor = self.select_type_sensor.get()
         if type_sensor == "V153":
             channel_values = ["Ch1", "Ch2", "Ch3"]
@@ -1040,7 +1043,7 @@ class ConfigurationApp(ctk.CTk):
         text_config(6, self.y_grid)
 
     def destroy(self):
-        self.Close_Save()
+        self.close_save()
         super().destroy()
 
 
