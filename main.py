@@ -818,7 +818,7 @@ class validate(ctk.CTk):
     def read_excel(self):
         print(self.file_location)
         print(type(self.file_location))
-        workbook = xlwings.Book(self.file_location)
+        workbook = xlwings.Book(fr"{self.file_location}")
         sheet = workbook.sheets["Sheet1"]
         if self.channel == "Ch1":
             corr = sheet.range('D27').value
