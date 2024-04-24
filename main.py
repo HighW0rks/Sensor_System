@@ -290,8 +290,7 @@ class MainApp(ctk.CTk):
                                                                                               pady=(0, 15))
         ctk.CTkButton(master=self.frame_button, text="Config", command=self.open_config).grid(row=3, column=0,
                                                                                               pady=(0, 15))
-        self.start_button = ctk.CTkButton(self, text="Start", width=300, height=100, state="disabled",command=self.start_program)
-        self.start_button.grid(row=6, column=0, columnspan=2, padx=(20, 0),pady=(10, 20), sticky="nsew")
+        self.start_button = ctk.CTkButton(self, text="Start", width=300, height=100, state="disabled",command=self.start_program).grid(row=6, column=0, columnspan=2, padx=(20, 0),pady=(10, 20), sticky="nsew")
         self.stop_button = ctk.CTkButton(self, text="Stop", width=300, height=100, command=lambda: self.start_stop(1))
 
     def status_info(self):
@@ -451,19 +450,16 @@ class MainApp(ctk.CTk):
             time.sleep(1)
 
     def status_update(self):
-        print("status_update called")
         # Update status variables and UI elements
         self.status_sensor_var.set(self.sensor_status)
         self.status_flow_var.set(self.flow_status)
         try:
-            print("Checking if start button can be enabled")
             # Enable start button if sensor and flow are connected and channel is selected
             if self.sensor_status and self.flow_status and self.channel_option.get() != "Select a channel":
                 self.start_button.configure(state="normal")
             else:
                 self.start_button.configure(state="disabled")
         except Exception as e:
-            print(e)
             pass
 
         # Enable zero point button if sensor is connected
