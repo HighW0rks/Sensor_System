@@ -588,9 +588,7 @@ class MainApp(ctk.CTk):
                     self.workbook.save(self.save_location)
                     # Stop program
                     self.start_stop(1)
-                    print("test1")
                     self.after(0,self.open_validate)
-                    print("Test2")
                 else:
                     # Parse script values
                     self.seconden_value = read_value[self.row_value].split(". ")[1].split("; ")[0].strip()
@@ -658,7 +656,6 @@ class MainApp(ctk.CTk):
         app.mainloop()
 
     def open_validate(self):
-        print("Opening the validate program")
         app = validate(self.save_location, self.channel)
         app.protocol("WM_DELETE_WINDOW", app.destroy)  # Handle window close event
         app.mainloop()
@@ -818,7 +815,7 @@ class validate(ctk.CTk):
     def read_excel(self):
         print(self.file_location)
         print(type(self.file_location))
-        workbook = xlwings.Book(fr"{self.file_location}")
+        workbook = xlwings.Book({self.file_location})
         sheet = workbook.sheets["Sheet1"]
         if self.channel == "Ch1":
             corr = sheet.range('D27').value
