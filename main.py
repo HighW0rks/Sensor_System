@@ -452,16 +452,19 @@ class MainApp(ctk.CTk):
             time.sleep(1)
 
     def status_update(self):
+        print("status_update called")
         # Update status variables and UI elements
         self.status_sensor_var.set(self.sensor_status)
         self.status_flow_var.set(self.flow_status)
         try:
+            print("Checking if start button can be enabled")
             # Enable start button if sensor and flow are connected and channel is selected
             if self.sensor_status and self.flow_status and self.channel_option.get() != "Select a channel":
                 self.start_button.configure(state="normal")
             else:
                 self.start_button.configure(state="disabled")
-        except Exception:
+        except Exception as e:
+            print(e)
             pass
 
         # Enable zero point button if sensor is connected
