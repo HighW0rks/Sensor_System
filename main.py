@@ -589,7 +589,7 @@ class MainApp(ctk.CTk):
                     # Stop program
                     self.start_stop(1)
                     print("test1")
-                    self.open_validate()
+                    self.after(0,self.open_validate)
                     print("Test2")
                 else:
                     # Parse script values
