@@ -290,9 +290,8 @@ class MainApp(ctk.CTk):
                                                                                               pady=(0, 15))
         ctk.CTkButton(master=self.frame_button, text="Config", command=self.open_config).grid(row=3, column=0,
                                                                                               pady=(0, 15))
-        self.start_button = ctk.CTkButton(self, text="Start", width=300, height=100, state="disabled",
-                                          command=self.start_program).grid(row=6, column=0, columnspan=2, padx=(20, 0),
-                                                                           pady=(10, 20), sticky="nsew")
+        self.start_button = ctk.CTkButton(self, text="Start", width=300, height=100, state="disabled",command=self.start_program)
+        self.start_button.grid(row=6, column=0, columnspan=2, padx=(20, 0),pady=(10, 20), sticky="nsew")
         self.stop_button = ctk.CTkButton(self, text="Stop", width=300, height=100, command=lambda: self.start_stop(1))
 
     def status_info(self):
