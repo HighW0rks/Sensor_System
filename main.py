@@ -87,43 +87,43 @@ class UpdateApp(ctk.CTk):
 
 
 def file_check():
-    location = readfile_value(8)
-    file_locations = [
-        f"{location}",
-        f"{location}/2SN100224",
-        f"{location}/2SN1001073",
-        f"{location}/2SN1001098",
-        f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
-        f"{location}/2SN100224/Scripts",
-        f"{location}/2SN100224/Scripts/Script Ch1.txt",
-        f"{location}/2SN100224/Scripts/Script Ch2.txt",
-        f"{location}/2SN100224/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
-        f"{location}/2SN1001073/Scripts",
-        f"{location}/2SN1001073/Scripts/Script Ch1.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch2.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch4.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch6.txt",
-        f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
-        f"{location}/2SN1001098/Scripts",
-        f"{location}/2SN1001098/Scripts/Script Ch1.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch2.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch4.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch6.txt"
-    ]
-    for i in range(len(file_locations)):
-        file = file_locations[i]
-        if not os.path.exists(file):
-            if i == 0:
-                mainapp = FileApp(file, True)
-                mainapp.mainloop()
-                return
-            else:
-                mainapp = FileApp(file)
-                mainapp.mainloop()
-                return
+    # location = readfile_value(8)
+    # file_locations = [
+    #     f"{location}",
+    #     f"{location}/2SN100224",
+    #     f"{location}/2SN1001073",
+    #     f"{location}/2SN1001098",
+    #     f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
+    #     f"{location}/2SN100224/Scripts",
+    #     f"{location}/2SN100224/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN100224/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN100224/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
+    #     f"{location}/2SN1001073/Scripts",
+    #     f"{location}/2SN1001073/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch4.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch6.txt",
+    #     f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
+    #     f"{location}/2SN1001098/Scripts",
+    #     f"{location}/2SN1001098/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch4.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch6.txt"
+    # ]
+    # for i in range(len(file_locations)):
+    #     file = file_locations[i]
+    #     if not os.path.exists(file):
+    #         if i == 0:
+    #             mainapp = FileApp(file, True)
+    #             mainapp.mainloop()
+    #             return
+    #         else:
+    #             mainapp = FileApp(file)
+    #             mainapp.mainloop()
+    #             return
     con = Connection()
     app = MainApp(con)  # Create an instance of the main application
     app.mainloop()
@@ -848,6 +848,7 @@ class validate(ctk.CTk):
         # Destroys the application
         super().destroy()
 
+
 class SensorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -856,6 +857,7 @@ class SensorApp(ctk.CTk):
         self.resizable(width=False, height=False)
         self.Place_Button_Y = 28
         self.Place_Button_X = 140
+        self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
         self.Menu_One = None
         self.Menu_Two = None
         self.Menu_Restart = None
@@ -867,7 +869,6 @@ class SensorApp(ctk.CTk):
         self.value_y_steps = None
         self.Masterchart = None
         self.Drawline = None
-        self.ppm_value = None
         self.Frame_Input = None
         self.Close_Save_Button = None
         self.Menu_One_Show = True
@@ -954,15 +955,38 @@ class SensorApp(ctk.CTk):
                                      color="lightblue",
                                      size=2,
                                      fill="enabled")
+        self.area_label = ctk.CTkLabel(self, text="Total Area: N/A")
+        self.area_label.grid(row=5, column=0)
 
     def loop(self):
+        total_area = 0
+        y = 0
         while self.main_run:
+            y_old = self.ppm_value[0]
+            self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
             self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
-            try:
-                self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
-            except Exception:
-                pass
             time.sleep(self.value_x_steps)
+            y_new = self.ppm_value[0]
+            if y_old == 0 and y_new == 0:
+                if total_area != 0:
+                    print(f"Total Area recorded: {int(total_area)}")
+                    total_area = 0
+                    y = 0
+            else:
+                if y_old != y_new:
+                    if y_old > y_new:
+                        y = y_old - y_new
+                        total_area += self.value_x_steps * (y / 2)
+                    else:
+                        y = y_new - y_old
+                        total_area += self.value_x_steps * (y / 2) + y_old
+                else:
+                    y = 0
+                    total_area += self.value_x_steps * y_new
+            if not total_area == 0:
+                self.area_label.configure(text=f"Total Area: {total_area}")
+            print(f"Old: {y_old} | New: {y_new} | difference: {y} | Area: {total_area}")
+
 
     def open_settings(self):
         app = ConfigurationApp()
