@@ -4,6 +4,7 @@ import os
 import sys
 import threading
 import time
+import subprocess
 # Third-Party library
 import openpyxl
 import xlwings
@@ -97,44 +98,44 @@ class UpdateApp(ctk.CTk):
 
 
 def file_check():
-    location = readfile_value(8)
-    file_locations = [
-        f"{location}",
-        f"{location}/2SN100224",
-        f"{location}/2SN1001073",
-        f"{location}/2SN1001098",
-        f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
-        f"{location}/2SN100224/Scripts",
-        f"{location}/2SN100224/Scripts/Script Ch1.txt",
-        f"{location}/2SN100224/Scripts/Script Ch2.txt",
-        f"{location}/2SN100224/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
-        f"{location}/2SN1001073/Scripts",
-        f"{location}/2SN1001073/Scripts/Script Ch1.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch2.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch4.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch6.txt",
-        f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
-        f"{location}/2SN1001098/Scripts",
-        f"{location}/2SN1001098/Scripts/Script Ch1.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch2.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch4.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch6.txt"
-    ]
-    for i in range(len(file_locations)):
-        file = file_locations[i]
-        if not os.path.exists(file):
-            if i == 0:
-                mainapp = FileApp(file, True)
-                mainapp.mainloop()
-                return
-            else:
-
-                mainapp = FileApp(file)
-                mainapp.mainloop()
-                return
+    # location = readfile_value(8)
+    # file_locations = [
+    #     f"{location}",
+    #     f"{location}/2SN100224",
+    #     f"{location}/2SN1001073",
+    #     f"{location}/2SN1001098",
+    #     f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
+    #     f"{location}/2SN100224/Scripts",
+    #     f"{location}/2SN100224/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN100224/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN100224/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
+    #     f"{location}/2SN1001073/Scripts",
+    #     f"{location}/2SN1001073/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch4.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch6.txt",
+    #     f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
+    #     f"{location}/2SN1001098/Scripts",
+    #     f"{location}/2SN1001098/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch4.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch6.txt"
+    # ]
+    # for i in range(len(file_locations)):
+    #     file = file_locations[i]
+    #     if not os.path.exists(file):
+    #         if i == 0:
+    #             mainapp = FileApp(file, True)
+    #             mainapp.mainloop()
+    #             return
+    #         else:
+    #
+    #             mainapp = FileApp(file)
+    #             mainapp.mainloop()
+    #             return
     con = Connection()
     app = MainApp(con)  # Create an instance of the main application
     app.mainloop()
@@ -804,9 +805,14 @@ class Configuration(ctk.CTk):
         # Sets folder location
         text_config(8, self.Folder_Location)
 
-    @staticmethod
-    def restart_app():
-        os.execv(sys.executable, [sys.executable] + sys.argv)
+    def restart_app(self):
+        script_path = sys.argv[0]
+
+        # Launch a new instance of the script
+        subprocess.Popen([sys.executable, script_path])
+
+        # Terminate the current instance
+        terminate_existing_main_processes()
 
     def destroy(self):
         # Destroys the application
@@ -1087,13 +1093,12 @@ class ConfigurationApp(ctk.CTk):
 
 def terminate_existing_main_processes():
     # Function to terminate existing instances of the main application process
+    current_pid = os.getpid()  # Get the PID of the current process
     for proc in psutil.process_iter(['pid', 'name']):
         # Iterate through all running processes
-        if proc.info['name'] == 'Skalar Saxon Tester.exe':
-            # Check if the process name matches the main application
+        if proc.info['pid'] == current_pid:
+            # Check if the process PID matches the PID of the current process
             proc.terminate()  # Terminate the process
-        if proc.info['name'] == 'Skalar Saxon Tester Console.exe':
-            proc.terminate()
 
 
 if __name__ == "__main__":
