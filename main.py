@@ -864,7 +864,6 @@ class SensorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("PPM Chart")
-        print("test")
         self.iconbitmap(icon)
         self.resizable(width=False, height=False)
         self.Place_Button_Y = 28
