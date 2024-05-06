@@ -98,44 +98,44 @@ class UpdateApp(ctk.CTk):
 
 
 def file_check():
-    # location = readfile_value(8)
-    # file_locations = [
-    #     f"{location}",
-    #     f"{location}/2SN100224",
-    #     f"{location}/2SN1001073",
-    #     f"{location}/2SN1001098",
-    #     f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
-    #     f"{location}/2SN100224/Scripts",
-    #     f"{location}/2SN100224/Scripts/Script Ch1.txt",
-    #     f"{location}/2SN100224/Scripts/Script Ch2.txt",
-    #     f"{location}/2SN100224/Scripts/Script Ch3.txt",
-    #     f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
-    #     f"{location}/2SN1001073/Scripts",
-    #     f"{location}/2SN1001073/Scripts/Script Ch1.txt",
-    #     f"{location}/2SN1001073/Scripts/Script Ch2.txt",
-    #     f"{location}/2SN1001073/Scripts/Script Ch3.txt",
-    #     f"{location}/2SN1001073/Scripts/Script Ch4.txt",
-    #     f"{location}/2SN1001073/Scripts/Script Ch6.txt",
-    #     f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
-    #     f"{location}/2SN1001098/Scripts",
-    #     f"{location}/2SN1001098/Scripts/Script Ch1.txt",
-    #     f"{location}/2SN1001098/Scripts/Script Ch2.txt",
-    #     f"{location}/2SN1001098/Scripts/Script Ch3.txt",
-    #     f"{location}/2SN1001098/Scripts/Script Ch4.txt",
-    #     f"{location}/2SN1001098/Scripts/Script Ch6.txt"
-    # ]
-    # for i in range(len(file_locations)):
-    #     file = file_locations[i]
-    #     if not os.path.exists(file):
-    #         if i == 0:
-    #             mainapp = FileApp(file, True)
-    #             mainapp.mainloop()
-    #             return
-    #         else:
-    #
-    #             mainapp = FileApp(file)
-    #             mainapp.mainloop()
-    #             return
+    location = readfile_value(8)
+    file_locations = [
+        f"{location}",
+        f"{location}/2SN100224",
+        f"{location}/2SN1001073",
+        f"{location}/2SN1001098",
+        f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
+        f"{location}/2SN100224/Scripts",
+        f"{location}/2SN100224/Scripts/Script Ch1.txt",
+        f"{location}/2SN100224/Scripts/Script Ch2.txt",
+        f"{location}/2SN100224/Scripts/Script Ch3.txt",
+        f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
+        f"{location}/2SN1001073/Scripts",
+        f"{location}/2SN1001073/Scripts/Script Ch1.txt",
+        f"{location}/2SN1001073/Scripts/Script Ch2.txt",
+        f"{location}/2SN1001073/Scripts/Script Ch3.txt",
+        f"{location}/2SN1001073/Scripts/Script Ch4.txt",
+        f"{location}/2SN1001073/Scripts/Script Ch6.txt",
+        f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
+        f"{location}/2SN1001098/Scripts",
+        f"{location}/2SN1001098/Scripts/Script Ch1.txt",
+        f"{location}/2SN1001098/Scripts/Script Ch2.txt",
+        f"{location}/2SN1001098/Scripts/Script Ch3.txt",
+        f"{location}/2SN1001098/Scripts/Script Ch4.txt",
+        f"{location}/2SN1001098/Scripts/Script Ch6.txt"
+    ]
+    for i in range(len(file_locations)):
+        file = file_locations[i]
+        if not os.path.exists(file):
+            if i == 0:
+                mainapp = FileApp(file, True)
+                mainapp.mainloop()
+                return
+            else:
+
+                mainapp = FileApp(file)
+                mainapp.mainloop()
+                return
     con = Connection()
     app = MainApp(con)  # Create an instance of the main application
     app.mainloop()
