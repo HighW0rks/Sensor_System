@@ -26,6 +26,13 @@ execute_path = os.path.abspath(sys.argv[0])
 icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
 version = None
 
+def set_priority():
+    import win32api, win32process, win32con
+
+    pid = win32api.GetCurrentProcessId()
+    handle = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
+    win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
+
 def log():
     open('log.txt', 'w').truncate()
     while True:
@@ -33,27 +40,34 @@ def log():
 
         # Redirect stdout and stderr to the log file
         sys.stdout = sys.stderr = open('log.txt', 'a')
-threading.Thread(target=log, daemon=True).start()
 
 def update():
     global version
-    response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/releases/latest")
+    headers = {
+        'Authorization': 'token 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',
+        'Accept': 'application/vnd.github.v3+json'
+    }
+
+    response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/releases/latest", headers=headers)
     if response.status_code == 200:
         latest_release = response.json()
     else:
         print("Failed to retrieve the latest release.")
         return
-    if response:
-        response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/tags")
+
+    if latest_release:
+        response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/tags", headers=headers)
         if response.status_code == 200:
             latest_tag = response.json()[0]['name']
             version = latest_tag
         else:
             file_check()
+
         if latest_tag != readfile_value(12):
             UpdateApp(latest_tag).mainloop()
         else:
             file_check()
+
 
 
 class UpdateApp(ctk.CTk):
@@ -1103,4 +1117,6 @@ def terminate_existing_main_processes():
 
 if __name__ == "__main__":
     # Initialize and run the application
+    set_priority()
+    threading.Thread(target=log, daemon=True).start()
     update()
