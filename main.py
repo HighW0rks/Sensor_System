@@ -15,6 +15,7 @@ import tkinter.ttk as ttk
 import customtkinter as ctk
 import tkchart
 import requests
+import logging
 # Uncommon library
 from connection import Connection
 import Chart
@@ -23,6 +24,15 @@ from Config import readfile_value, text_config
 execute_path = os.path.abspath(sys.argv[0])
 icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
 version = None
+
+def log():
+    open('log.txt', 'w').truncate()
+    while True:
+        logging.basicConfig(filename='log.txt', level=logging.NOTSET)
+
+        # Redirect stdout and stderr to the log file
+        sys.stdout = sys.stderr = open('log.txt', 'a')
+threading.Thread(target=log, daemon=True).start()
 
 def update():
     global version
@@ -87,43 +97,44 @@ class UpdateApp(ctk.CTk):
 
 
 def file_check():
-    # location = readfile_value(8)
-    # file_locations = [
-    #     f"{location}",
-    #     f"{location}/2SN100224",
-    #     f"{location}/2SN1001073",
-    #     f"{location}/2SN1001098",
-    #     f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
-    #     f"{location}/2SN100224/Scripts",
-    #     f"{location}/2SN100224/Scripts/Script Ch1.txt",
-    #     f"{location}/2SN100224/Scripts/Script Ch2.txt",
-    #     f"{location}/2SN100224/Scripts/Script Ch3.txt",
-    #     f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
-    #     f"{location}/2SN1001073/Scripts",
-    #     f"{location}/2SN1001073/Scripts/Script Ch1.txt",
-    #     f"{location}/2SN1001073/Scripts/Script Ch2.txt",
-    #     f"{location}/2SN1001073/Scripts/Script Ch3.txt",
-    #     f"{location}/2SN1001073/Scripts/Script Ch4.txt",
-    #     f"{location}/2SN1001073/Scripts/Script Ch6.txt",
-    #     f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
-    #     f"{location}/2SN1001098/Scripts",
-    #     f"{location}/2SN1001098/Scripts/Script Ch1.txt",
-    #     f"{location}/2SN1001098/Scripts/Script Ch2.txt",
-    #     f"{location}/2SN1001098/Scripts/Script Ch3.txt",
-    #     f"{location}/2SN1001098/Scripts/Script Ch4.txt",
-    #     f"{location}/2SN1001098/Scripts/Script Ch6.txt"
-    # ]
-    # for i in range(len(file_locations)):
-    #     file = file_locations[i]
-    #     if not os.path.exists(file):
-    #         if i == 0:
-    #             mainapp = FileApp(file, True)
-    #             mainapp.mainloop()
-    #             return
-    #         else:
-    #             mainapp = FileApp(file)
-    #             mainapp.mainloop()
-    #             return
+    location = readfile_value(8)
+    file_locations = [
+        f"{location}",
+        f"{location}/2SN100224",
+        f"{location}/2SN1001073",
+        f"{location}/2SN1001098",
+        f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
+        f"{location}/2SN100224/Scripts",
+        f"{location}/2SN100224/Scripts/Script Ch1.txt",
+        f"{location}/2SN100224/Scripts/Script Ch2.txt",
+        f"{location}/2SN100224/Scripts/Script Ch3.txt",
+        f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
+        f"{location}/2SN1001073/Scripts",
+        f"{location}/2SN1001073/Scripts/Script Ch1.txt",
+        f"{location}/2SN1001073/Scripts/Script Ch2.txt",
+        f"{location}/2SN1001073/Scripts/Script Ch3.txt",
+        f"{location}/2SN1001073/Scripts/Script Ch4.txt",
+        f"{location}/2SN1001073/Scripts/Script Ch6.txt",
+        f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
+        f"{location}/2SN1001098/Scripts",
+        f"{location}/2SN1001098/Scripts/Script Ch1.txt",
+        f"{location}/2SN1001098/Scripts/Script Ch2.txt",
+        f"{location}/2SN1001098/Scripts/Script Ch3.txt",
+        f"{location}/2SN1001098/Scripts/Script Ch4.txt",
+        f"{location}/2SN1001098/Scripts/Script Ch6.txt"
+    ]
+    for i in range(len(file_locations)):
+        file = file_locations[i]
+        if not os.path.exists(file):
+            if i == 0:
+                mainapp = FileApp(file, True)
+                mainapp.mainloop()
+                return
+            else:
+
+                mainapp = FileApp(file)
+                mainapp.mainloop()
+                return
     con = Connection()
     app = MainApp(con)  # Create an instance of the main application
     app.mainloop()
@@ -156,6 +167,8 @@ class FileApp(ctk.CTk):
         print("Error start")
         self.text_frame = ctk.CTkFrame(self)
         self.text_frame.grid(row=0, column=0, padx=20, pady=(20, 0))
+        if len(self.file) <= 2:
+            self.file = "config empty"
         if self.main_folder:
             self.Error_text = ctk.CTkLabel(master=self.text_frame, text=f"The main folder is not found:\n{self.file}")
             self.Error_text.grid(row=0, column=0, padx=20, pady=20)
@@ -667,9 +680,7 @@ class MainApp(ctk.CTk):
         else:
             ctk.set_appearance_mode("Dark")  # Set dark mode
 
-
-    @staticmethod
-    def open_sensor():
+    def open_sensor(self):
         app = SensorApp()
         app.protocol("WM_DELETE_WINDOW", app.destroy)  # Handle window close event
         app.mainloop()
@@ -853,11 +864,15 @@ class SensorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("PPM Chart")
+        print("test")
         self.iconbitmap(icon)
         self.resizable(width=False, height=False)
         self.Place_Button_Y = 28
         self.Place_Button_X = 140
-        self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
+        try:
+            self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
+        except Exception:
+            self.ppm_value = [0]
         self.Menu_One = None
         self.Menu_Two = None
         self.Menu_Restart = None
@@ -967,7 +982,7 @@ class SensorApp(ctk.CTk):
             self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
             time.sleep(self.value_x_steps)
             y_new = self.ppm_value[0]
-            if y_old == 0 and y_new == 0:
+            if y_old <= 0 and y_new <= 0:
                 if total_area != 0:
                     print(f"Total Area recorded: {int(total_area)}")
                     total_area = 0
