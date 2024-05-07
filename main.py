@@ -44,7 +44,7 @@ def log():
 def update():
     global version
     headers = {
-        'Authorization': 'token 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',
+        'Authorization': 'token',
         'Accept': 'application/vnd.github.v3+json'
     }
 
