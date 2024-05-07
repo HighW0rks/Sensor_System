@@ -44,7 +44,7 @@ def log():
 def update():
     global version
     headers = {
-        'Authorization': 'token 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',
+        'Authorization': 'token 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',
         'Accept': 'application/vnd.github.v3+json'
     }
 
@@ -69,7 +69,6 @@ def update():
             file_check()
 
 
-
 class UpdateApp(ctk.CTk):
     def __init__(self, latest_tag):
         super().__init__()
@@ -87,13 +86,12 @@ class UpdateApp(ctk.CTk):
         else:
             ctk.set_appearance_mode("Dark")  # Set dark mode
 
-
     def app(self):
         ctk.CTkLabel(self, text="New update available!").grid(row=0, column=0, sticky="s")
         ctk.CTkLabel(self, text=f"{readfile_value(12)}                {self.tag}").grid(row=1, column=0, sticky="s")
         ctk.CTkLabel(self, text="➞", font=ctk.CTkFont(size=25)).place(x=133, y=28)
-        ctk.CTkButton(self, text="Update", command=self.start_update, width=250, height=40, font=ctk.CTkFont(size=20)).grid(row=2, column=0,padx=20, pady=20,sticky="n")
-        ctk.CTkButton(self, text="skip update", command=self.skip).grid(row=2, column=0, pady=(80,20), sticky="s")
+        ctk.CTkButton(self, text="Update", command=self.start_update, width=250, height=40,font=ctk.CTkFont(size=20)).grid(row=2, column=0, padx=20, pady=20, sticky="n")
+        ctk.CTkButton(self, text="skip update", command=self.skip).grid(row=2, column=0, pady=(80, 20), sticky="s")
 
     def start_update(self):
         try:
@@ -861,7 +859,7 @@ class validate(ctk.CTk):
             corr = sheet.range('D108').value
             slope = sheet.range('D109').value
         else:
-            corr =sheet.range('D127').value
+            corr = sheet.range('D127').value
             slope = sheet.range('D128').value
 
         ctk.CTkLabel(self, text=corr).grid(row=0, column=0, padx=10, sticky="nw")
@@ -869,7 +867,7 @@ class validate(ctk.CTk):
         if corr > float(0.99):
             ctk.CTkLabel(self, text="Corr passed").grid(row=0, column=1, padx=10, sticky="nw")
         else:
-            ctk.CTkLabel(self, text="Corr failed").grid(row=0, column=1 , padx=10, sticky="nw")
+            ctk.CTkLabel(self, text="Corr failed").grid(row=0, column=1, padx=10, sticky="nw")
         if slope > float(0.99):
             ctk.CTkLabel(self, text="Slope passed").grid(row=1, colomn=0, padx=10, sticky="nw")
         else:
@@ -1020,7 +1018,6 @@ class SensorApp(ctk.CTk):
             if not total_area == 0:
                 self.area_label.configure(text=f"Total Area: {total_area}")
             print(f"Old: {y_old} | New: {y_new} | difference: {y} | Area: {total_area}")
-
 
     def open_settings(self):
         app = ConfigurationApp()
