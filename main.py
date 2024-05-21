@@ -44,7 +44,7 @@ def log():
 def update():
     global version
     headers = {
-        'Authorization': 'token',
+        'Authorization': 'token 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',
         'Accept': 'application/vnd.github.v3+json'
     }
 
@@ -96,7 +96,7 @@ class UpdateApp(ctk.CTk):
     def start_update(self):
         try:
             # Replace 'Update.exe' with the full path if it's not in the current directory
-            os.system('Update.exe')
+            os.system('start /B Update.exe')
         except Exception as e:
             print(f"Error: {e}")
             for i in range(5):
@@ -417,7 +417,7 @@ class MainApp(ctk.CTk):
                 configure = False
 
                 if response:
-                    # print("Response: ", response)
+                    print("Response: ", response)
                     # Parse response and update values
                     self.sensor_status = 1
                     self.channel_1, self.channel_2, self.channel_3, self.channel_4, self.ppm_value, self.channel_6, self.temperature, self.air_pressure = response.split()[
@@ -1008,7 +1008,7 @@ class SensorApp(ctk.CTk):
                 if y_old != y_new:
                     if y_old > y_new:
                         y = y_old - y_new
-                        total_area += self.value_x_steps * (y / 2)
+                        total_area += self.value_x_steps * (y / 2) + y_old
                     else:
                         y = y_new - y_old
                         total_area += self.value_x_steps * (y / 2) + y_old
