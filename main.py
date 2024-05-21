@@ -25,7 +25,6 @@ from Config import readfile_value, text_config
 execute_path = os.path.abspath(sys.argv[0])
 icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
 version = None
-
 def set_priority():
     import win32api, win32process, win32con
 
@@ -44,7 +43,7 @@ def log():
 def update():
     global version
     headers = {
-        'Authorization': 'token ',
+        'Authorization': f'token {token}',
         'Accept': 'application/vnd.github.v3+json'
     }
 
@@ -1008,10 +1007,10 @@ class SensorApp(ctk.CTk):
                 if y_old != y_new:
                     if y_old > y_new:
                         y = y_old - y_new
-                        total_area += self.value_x_steps * (y / 2) + y_old
+                        total_area += self.value_x_steps * ((y / 2) + y_old)
                     else:
                         y = y_new - y_old
-                        total_area += self.value_x_steps * (y / 2) + y_old
+                        total_area += self.value_x_steps * ((y / 2) + y_new)
                 else:
                     y = 0
                     total_area += self.value_x_steps * y_new
