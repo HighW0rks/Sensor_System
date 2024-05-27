@@ -109,44 +109,44 @@ class UpdateApp(ctk.CTk):
 
 
 def file_check():
-    location = readfile_value(8)
-    file_locations = [
-        f"{location}",
-        f"{location}/2SN100224",
-        f"{location}/2SN1001073",
-        f"{location}/2SN1001098",
-        f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
-        f"{location}/2SN100224/Scripts",
-        f"{location}/2SN100224/Scripts/Script Ch1.txt",
-        f"{location}/2SN100224/Scripts/Script Ch2.txt",
-        f"{location}/2SN100224/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
-        f"{location}/2SN1001073/Scripts",
-        f"{location}/2SN1001073/Scripts/Script Ch1.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch2.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch4.txt",
-        f"{location}/2SN1001073/Scripts/Script Ch6.txt",
-        f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
-        f"{location}/2SN1001098/Scripts",
-        f"{location}/2SN1001098/Scripts/Script Ch1.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch2.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch3.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch4.txt",
-        f"{location}/2SN1001098/Scripts/Script Ch6.txt"
-    ]
-    for i in range(len(file_locations)):
-        file = file_locations[i]
-        if not os.path.exists(file):
-            if i == 0:
-                mainapp = FileApp(file, True)
-                mainapp.mainloop()
-                return
-            else:
-
-                mainapp = FileApp(file)
-                mainapp.mainloop()
-                return
+    # location = readfile_value(8)
+    # file_locations = [
+    #     f"{location}",
+    #     f"{location}/2SN100224",
+    #     f"{location}/2SN1001073",
+    #     f"{location}/2SN1001098",
+    #     f"{location}/2SN100224/425 --- test Data QC 2SN100224.xlsx",
+    #     f"{location}/2SN100224/Scripts",
+    #     f"{location}/2SN100224/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN100224/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN100224/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001073/425 --- test Data QC 2SN1001073.xlsx",
+    #     f"{location}/2SN1001073/Scripts",
+    #     f"{location}/2SN1001073/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch4.txt",
+    #     f"{location}/2SN1001073/Scripts/Script Ch6.txt",
+    #     f"{location}/2SN1001098/425 --- test Data QC 2SN1001098 Goud.xlsx",
+    #     f"{location}/2SN1001098/Scripts",
+    #     f"{location}/2SN1001098/Scripts/Script Ch1.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch2.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch3.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch4.txt",
+    #     f"{location}/2SN1001098/Scripts/Script Ch6.txt"
+    # ]
+    # for i in range(len(file_locations)):
+    #     file = file_locations[i]
+    #     if not os.path.exists(file):
+    #         if i == 0:
+    #             mainapp = FileApp(file, True)
+    #             mainapp.mainloop()
+    #             return
+    #         else:
+    #
+    #             mainapp = FileApp(file)
+    #             mainapp.mainloop()
+    #             return
     con = Connection()
     app = MainApp(con)  # Create an instance of the main application
     app.mainloop()
@@ -334,8 +334,10 @@ class MainApp(ctk.CTk):
                 try:
                     self.connection.sensor.write(b"\x02\x30\x39\x30\x30\x34\x34\x30\x30\x30\x62\x03")
                     read = self.connection.sensor.read(1024)
-                    if len(read) == 0 or len(read) > 24:
+                    if len(read) == 0:
                         self.serienummer = "Unknown"
+                    elif len(read) > 24:
+                        self.serienummer = "Error"
                     else:
                         self.serienummer = str(read.decode()[5:13])
                     self.connection.sensor.write(b"\x02\x36\x38\x30\x30\x30\x63\x03")
@@ -349,7 +351,7 @@ class MainApp(ctk.CTk):
     def status_channel(self):
         try:
             if len(self.ppm_value) > 0:
-                if self.channel_1 == self.ppm_value or self.channel_2 == self.ppm_value or self.channel_3 == self.ppm_value:
+                if self.channel_4 == self.ppm_value or self.channel_6 == self.ppm_value:
                     self.status_channel_label.configure(text="Channel\nK1/K2/K3")
                 else:
                     self.status_channel_label.configure(text="Channel\nK4/K6")
@@ -406,7 +408,9 @@ class MainApp(ctk.CTk):
                 self.status_channel()
 
             # Check if serial number is unknown and update if necessary
-            if self.serienummer == "Unknown":
+            if self.serienummer_label.get() == "Unknown":
+                self.sensor_info_con()
+            elif self.serienummer_label.get() == "Error":
                 self.sensor_info_con()
 
             try:
@@ -433,11 +437,13 @@ class MainApp(ctk.CTk):
                 else:
                     # Set sensor status to unknown if no response
                     self.serienummer = "Unknown"
+                    print("No serienummer found")
                     self.sensor_status = 0
                     configure = True
-            except Exception:
+            except Exception as e:
                 # Handle errors in sensor communication
                 self.serienummer = "Unknown"
+                print(e)
                 self.sensor_status = 0
                 configure = True
                 time.sleep(1)
@@ -910,7 +916,7 @@ class SensorApp(ctk.CTk):
     def loading(self):
         self.topbar()
         self.chart()
-        threading.Thread(target=self.loop, daemon=True).start()
+        # threading.Thread(target=self.loop, daemon=True).start()
 
     def topbar(self):
         self.Menu_One = ctk.CTkButton(self, text="Exit", command=self.topbar_menu_one)
@@ -986,37 +992,37 @@ class SensorApp(ctk.CTk):
                                      color="lightblue",
                                      size=2,
                                      fill="enabled")
-        self.area_label = ctk.CTkLabel(self, text="Total Area: N/A")
-        self.area_label.grid(row=5, column=0)
+        # self.area_label = ctk.CTkLabel(self, text="Total Area: N/A")
+        # self.area_label.grid(row=5, column=0)
 
-    def loop(self):
-        total_area = 0
-        y = 0
-        while self.main_run:
-            y_old = self.ppm_value[0]
-            self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
-            self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
-            time.sleep(self.value_x_steps)
-            y_new = self.ppm_value[0]
-            if y_old <= 0 and y_new <= 0:
-                if total_area != 0:
-                    print(f"Total Area recorded: {int(total_area)}")
-                    total_area = 0
-                    y = 0
-            else:
-                if y_old != y_new:
-                    if y_old > y_new:
-                        y = y_old - y_new
-                        total_area += self.value_x_steps * ((y / 2) + y_old)
-                    else:
-                        y = y_new - y_old
-                        total_area += self.value_x_steps * ((y / 2) + y_new)
-                else:
-                    y = 0
-                    total_area += self.value_x_steps * y_new
-            if not total_area == 0:
-                self.area_label.configure(text=f"Total Area: {total_area}")
-            print(f"Old: {y_old} | New: {y_new} | difference: {y} | Area: {total_area}")
+    # def loop(self):
+    #     total_area = 0
+    #     y = 0
+    #     while self.main_run:
+    #         y_old = self.ppm_value[0]
+    #         self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
+    #         self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
+    #         time.sleep(self.value_x_steps)
+    #         y_new = self.ppm_value[0]
+    #         if y_old <= 0 and y_new <= 0:
+    #             if total_area != 0:
+    #                 print(f"Total Area recorded: {int(total_area)}")
+    #                 total_area = 0
+    #                 y = 0
+    #         else:
+    #             if y_old != y_new:
+    #                 if y_old > y_new:
+    #                     y = y_old - y_new
+    #                     total_area += self.value_x_steps * ((y / 2) + y_old)
+    #                 else:
+    #                     y = y_new - y_old
+    #                     total_area += self.value_x_steps * ((y / 2) + y_new)
+    #             else:
+    #                 y = 0
+    #                 total_area += self.value_x_steps * y_new
+    #         if not total_area == 0:
+    #             self.area_label.configure(text=f"Total Area: {total_area}")
+    #         print(f"Old: {y_old} | New: {y_new} | difference: {y} | Area: {total_area}")
 
     def open_settings(self):
         app = ConfigurationApp()

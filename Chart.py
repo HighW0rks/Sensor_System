@@ -184,8 +184,7 @@ class App(ctk.CTk):
     def Chartline(self):
         self.Drawline_1 = tkchart.Line(master=self.Masterchart,
                                        color="lightblue",
-                                       size=2,
-                                       fill="enabled")
+                                       size=2)
         self.Drawline_2 = tkchart.Line(master=self.Masterchart,
                                        color="red",
                                        size=2)
