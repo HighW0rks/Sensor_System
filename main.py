@@ -25,6 +25,7 @@ from Config import readfile_value, text_config
 execute_path = os.path.abspath(sys.argv[0])
 icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
 version = None
+
 def set_priority():
     import win32api, win32process, win32con
 
@@ -544,11 +545,13 @@ class MainApp(ctk.CTk):
     def start_excel(self):
         # Initialize Excel settings
         self.excel_row = 2  # Start from row 2
-        if os.path.exists(fr"{self.folder}/{self.folder_location}/{self.serienummer}.xlsx"):
-            self.workbook = openpyxl.load_workbook(fr"{self.folder}/{self.folder_location}/{self.serienummer}.xlsx")
+        if os.path.exists(fr"{self.folder}/{self.folder_location}/{self.serienummer}/{self.serienummer}.xlsx"):
+            self.workbook = openpyxl.load_workbook(fr"{self.folder}/{self.folder_location}/{self.serienummer}/{self.serienummer}.xlsx")
         else:
             self.workbook = openpyxl.load_workbook(fr"{self.folder}/{self.folder_location}/{self.excel_file}")  # Load workbook
+        print("Workbook: ", self.workbook)
         self.worksheet = self.workbook["Sheet1"]  # Select Sheet1
+        print("Worksheet: ",self.worksheet)
         self.worksheet['E2'] = self.serienummer  # Set serial number
         self.worksheet['E3'] = self.folder_location  # Set model
         self.worksheet['E4'] = self.sensor_version  # Set sensor version
@@ -617,10 +620,13 @@ class MainApp(ctk.CTk):
                     if not os.path.exists(f"{self.folder}/{self.folder_location}/{self.serienummer}"):
                         os.mkdir(f"{self.folder}/{self.folder_location}/{self.serienummer}")
                     self.save_location = f"{self.folder}/{self.folder_location}/{self.serienummer}/{self.serienummer}.xlsx"
+                    print("Saving file...")
                     self.workbook.save(self.save_location)
+                    print("File saved!")
                     # Stop program
                     self.start_stop(1)
-                    self.after(0,self.open_validate)
+                    print("Start button reseted")
+                    # self.after(0,self.open_validate)
                 else:
                     # Parse script values
                     self.seconden_value = read_value[self.row_value].split(". ")[1].split("; ")[0].strip()
@@ -1002,7 +1008,7 @@ class SensorApp(ctk.CTk):
         while self.main_run:
     #         y_old = self.ppm_value[0]
             self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
-    #         self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
+            self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
             time.sleep(self.value_x_steps)
     #         y_new = self.ppm_value[0]
     #         if y_old <= 0 and y_new <= 0:
