@@ -41,31 +41,31 @@ def log():
         sys.stdout = sys.stderr = open('log.txt', 'a')
 
 def update():
-    global version
-    headers = {
-        'Authorization': f'token {token}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
-
-    response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/releases/latest", headers=headers)
-    if response.status_code == 200:
-        latest_release = response.json()
-    else:
-        print("Failed to retrieve the latest release.")
-        return
-
-    if latest_release:
-        response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/tags", headers=headers)
-        if response.status_code == 200:
-            latest_tag = response.json()[0]['name']
-            version = latest_tag
-        else:
-            file_check()
-
-        if latest_tag != readfile_value(12):
-            UpdateApp(latest_tag).mainloop()
-        else:
-            file_check()
+    # global version
+    # headers = {
+    #     'Authorization': f'token {token}',
+    #     'Accept': 'application/vnd.github.v3+json'
+    # }
+    #
+    # response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/releases/latest", headers=headers)
+    # if response.status_code == 200:
+    #     latest_release = response.json()
+    # else:
+    #     print("Failed to retrieve the latest release.")
+    #     return
+    #
+    # if latest_release:
+    #     response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/tags", headers=headers)
+    #     if response.status_code == 200:
+    #         latest_tag = response.json()[0]['name']
+    #         version = latest_tag
+    #     else:
+    #         file_check()
+    #
+    #     if latest_tag != readfile_value(12):
+    #         UpdateApp(latest_tag).mainloop()
+    #     else:
+    file_check()
 
 
 class UpdateApp(ctk.CTk):
@@ -408,9 +408,9 @@ class MainApp(ctk.CTk):
                 self.status_channel()
 
             # Check if serial number is unknown and update if necessary
-            if self.serienummer_label.get() == "Unknown":
+            if self.serienummer_label.cget("text") == "Serie Nummer\nUnknown":
                 self.sensor_info_con()
-            elif self.serienummer_label.get() == "Error":
+            elif self.serienummer_label.cget("text") == "Serie Nummer\nError":
                 self.sensor_info_con()
 
             try:
@@ -544,8 +544,10 @@ class MainApp(ctk.CTk):
     def start_excel(self):
         # Initialize Excel settings
         self.excel_row = 2  # Start from row 2
-        self.workbook = openpyxl.load_workbook(
-            fr"{self.folder}/{self.folder_location}/{self.excel_file}")  # Load workbook
+        if os.path.exists(fr"{self.folder}/{self.folder_location}/{self.serienummer}.xlsx"):
+            self.workbook = openpyxl.load_workbook(fr"{self.folder}/{self.folder_location}/{self.serienummer}.xlsx")
+        else:
+            self.workbook = openpyxl.load_workbook(fr"{self.folder}/{self.folder_location}/{self.excel_file}")  # Load workbook
         self.worksheet = self.workbook["Sheet1"]  # Select Sheet1
         self.worksheet['E2'] = self.serienummer  # Set serial number
         self.worksheet['E3'] = self.folder_location  # Set model
@@ -612,10 +614,9 @@ class MainApp(ctk.CTk):
                 if not self.row_value < len(read_value):
                     print("End of file reached")
                     # Save Excel file with timestamp
-                    self.get_time()
                     if not os.path.exists(f"{self.folder}/{self.folder_location}/{self.serienummer}"):
                         os.mkdir(f"{self.folder}/{self.folder_location}/{self.serienummer}")
-                    self.save_location = f"{self.folder}/{self.folder_location}/{self.serienummer}/{self.channel}_{self.current_time}.xlsx"
+                    self.save_location = f"{self.folder}/{self.folder_location}/{self.serienummer}/{self.serienummer}.xlsx"
                     self.workbook.save(self.save_location)
                     # Stop program
                     self.start_stop(1)
@@ -916,7 +917,7 @@ class SensorApp(ctk.CTk):
     def loading(self):
         self.topbar()
         self.chart()
-        # threading.Thread(target=self.loop, daemon=True).start()
+        threading.Thread(target=self.loop, daemon=True).start()
 
     def topbar(self):
         self.Menu_One = ctk.CTkButton(self, text="Exit", command=self.topbar_menu_one)
@@ -995,14 +996,14 @@ class SensorApp(ctk.CTk):
         # self.area_label = ctk.CTkLabel(self, text="Total Area: N/A")
         # self.area_label.grid(row=5, column=0)
 
-    # def loop(self):
+    def loop(self):
     #     total_area = 0
     #     y = 0
-    #     while self.main_run:
+        while self.main_run:
     #         y_old = self.ppm_value[0]
-    #         self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
+            self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
     #         self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
-    #         time.sleep(self.value_x_steps)
+            time.sleep(self.value_x_steps)
     #         y_new = self.ppm_value[0]
     #         if y_old <= 0 and y_new <= 0:
     #             if total_area != 0:
