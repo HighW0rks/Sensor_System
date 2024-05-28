@@ -41,31 +41,31 @@ def log():
         sys.stdout = sys.stderr = open('log.txt', 'a')
 
 def update():
-    # global version
-    # headers = {
-    #     'Authorization': f'token {token}',
-    #     'Accept': 'application/vnd.github.v3+json'
-    # }
-    #
-    # response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/releases/latest", headers=headers)
-    # if response.status_code == 200:
-    #     latest_release = response.json()
-    # else:
-    #     print("Failed to retrieve the latest release.")
-    #     return
-    #
-    # if latest_release:
-    #     response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/tags", headers=headers)
-    #     if response.status_code == 200:
-    #         latest_tag = response.json()[0]['name']
-    #         version = latest_tag
-    #     else:
-    #         file_check()
-    #
-    #     if latest_tag != readfile_value(12):
-    #         UpdateApp(latest_tag).mainloop()
-    #     else:
-    file_check()
+    global version
+    headers = {
+        'Authorization': f'token {token}',
+        'Accept': 'application/vnd.github.v3+json'
+    }
+
+    response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/releases/latest", headers=headers)
+    if response.status_code == 200:
+        latest_release = response.json()
+    else:
+        print("Failed to retrieve the latest release.")
+        return
+
+    if latest_release:
+        response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/tags", headers=headers)
+        if response.status_code == 200:
+            latest_tag = response.json()[0]['name']
+            version = latest_tag
+        else:
+            file_check()
+
+        if latest_tag != readfile_value(12):
+            UpdateApp(latest_tag).mainloop()
+        else:
+            file_check()
 
 
 class UpdateApp(ctk.CTk):
