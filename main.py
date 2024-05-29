@@ -25,7 +25,6 @@ from Config import readfile_value, text_config
 execute_path = os.path.abspath(sys.argv[0])
 icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
 version = None
-
 def set_priority():
     import win32api, win32process, win32con
 
@@ -341,6 +340,7 @@ class MainApp(ctk.CTk):
                         self.serienummer = "Error"
                     else:
                         self.serienummer = str(read.decode()[5:13])
+                    print("Debug serienummer: ",self.serienummer)
                     self.connection.sensor.write(b"\x02\x36\x38\x30\x30\x30\x63\x03")
                     read = self.connection.sensor.read(1024).decode()
                     self.sensor_version = str(read[61:81])
@@ -353,9 +353,9 @@ class MainApp(ctk.CTk):
         try:
             if len(self.ppm_value) > 0:
                 if self.channel_4 == self.ppm_value or self.channel_6 == self.ppm_value:
-                    self.status_channel_label.configure(text="Channel\nK1/K2/K3")
-                else:
                     self.status_channel_label.configure(text="Channel\nK4/K6")
+                else:
+                    self.status_channel_label.configure(text="Channel\nK1/K2/K3")
         except Exception:
             pass
 
@@ -484,6 +484,7 @@ class MainApp(ctk.CTk):
 
     def status_update(self):
         # Update status variables and UI elements
+        print("Debug sensor_status: ", self.sensor_status)
         self.status_sensor_var.set(self.sensor_status)
         self.status_flow_var.set(self.flow_status)
         try:
