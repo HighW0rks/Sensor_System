@@ -1,6 +1,7 @@
 # Standard library
 import datetime
 import os
+import shutil
 import sys
 import threading
 import time
@@ -17,6 +18,8 @@ import customtkinter as ctk
 import tkchart
 import requests
 import logging
+import CTkMessagebox as ctkm
+import pymssql
 # Uncommon library
 from connection import Connection
 import Chart
@@ -25,12 +28,17 @@ from Config import readfile_value, text_config
 execute_path = os.path.abspath(sys.argv[0])
 icon = os.path.dirname(execute_path) + r"\skalar_analytical_bv_logo_Zoy_icon.ico"
 version = None
+
+fileserver = r"I:\Fileserver"
+
+
 def set_priority():
     import win32api, win32process, win32con
 
     pid = win32api.GetCurrentProcessId()
     handle = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
     win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
+
 
 def log():
     open('log.txt', 'w').truncate()
@@ -40,72 +48,39 @@ def log():
         # Redirect stdout and stderr to the log file
         sys.stdout = sys.stderr = open('log.txt', 'a')
 
-def update():
-    global version
-    headers = {
-        'Authorization': f'token {token}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
 
-    response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/releases/latest", headers=headers)
-    if response.status_code == 200:
-        latest_release = response.json()
-    else:
-        print("Failed to retrieve the latest release.")
-        return
-
-    if latest_release:
-        response = requests.get("https://api.github.com/repos/HighW0rks/Sensor_System/tags", headers=headers)
-        if response.status_code == 200:
-            latest_tag = response.json()[0]['name']
-            version = latest_tag
-        else:
-            file_check()
-
-        if latest_tag != readfile_value(12):
-            UpdateApp(latest_tag).mainloop()
-        else:
-            file_check()
+def connection():
+    try:
+        conn = pymssql.connect(
+            server=readfile_value(13),
+            user=readfile_value(14),
+            password=readfile_value(15),
+            database=readfile_value(16),
+            port=int(readfile_value(17))
+        )
+        return conn
+    except Exception as e:
+        print(f"Error connecting to the database: {e}")
+        return None
 
 
-class UpdateApp(ctk.CTk):
-    def __init__(self, latest_tag):
-        super().__init__()
-        self.title("Update")
-        self.tag = latest_tag
-        self.resizable(height=False, width=False)
-        self.iconbitmap(icon)
-        self.background_color()
-        self.app()
-
-    def background_color(self):
-        # Set application appearance mode based on configuration
-        if readfile_value(7) == "False":
-            ctk.set_appearance_mode("Light")  # Set light mode
-        else:
-            ctk.set_appearance_mode("Dark")  # Set dark mode
-
-    def app(self):
-        ctk.CTkLabel(self, text="New update available!").grid(row=0, column=0, sticky="s")
-        ctk.CTkLabel(self, text=f"{readfile_value(12)}                {self.tag}").grid(row=1, column=0, sticky="s")
-        ctk.CTkLabel(self, text="➞", font=ctk.CTkFont(size=25)).place(x=133, y=28)
-        ctk.CTkButton(self, text="Update", command=self.start_update, width=250, height=40,font=ctk.CTkFont(size=20)).grid(row=2, column=0, padx=20, pady=20, sticky="n")
-        ctk.CTkButton(self, text="skip update", command=self.skip).grid(row=2, column=0, pady=(80, 20), sticky="s")
-
-    def start_update(self):
-        try:
-            # Replace 'Update.exe' with the full path if it's not in the current directory
-            os.system('start /B Update.exe')
-        except Exception as e:
-            print(f"Error: {e}")
-            for i in range(5):
-                print("App will destroy in 5 sec:")
-                print(i + 1)
-            terminate_existing_main_processes()
-
-    def skip(self):
-        self.destroy()
-        file_check()
+def send_data(sql, params=None):
+    conn = connection()
+    if not conn:
+        return None
+    try:
+        cursor = conn.cursor(as_dict=True)  # Use dictionary cursor if needed
+        cursor.execute(sql, params)
+        if params:
+            conn.commit()
+        results = cursor.fetchall()
+        return results
+    except Exception as e:
+        print(f"Error executing query: {e}")
+        conn.rollback()
+        return None
+    finally:
+        conn.close()
 
 
 def file_check():
@@ -256,7 +231,7 @@ class MainApp(ctk.CTk):
         self.flow3_value = None
         self.ppm_meter_label = None
         self.zero_point_button = None
-        self.folder = None
+        self.folder = readfile_value(8)
         self.channel = None
         self.excel_row = None
         self.workbook = None
@@ -281,18 +256,18 @@ class MainApp(ctk.CTk):
         self.buttons()
         self.thread()
         self.set_sensor()
-        self.zero_point()
+        self.certificate()
 
     def frame(self):
         # Create frames for organizing widgets
         self.frame_button = ctk.CTkFrame(self)
-        self.frame_button.grid(row=0, column=0, padx=(15, 0), pady=(20, 20), sticky="n")
+        self.frame_button.grid(row=0, column=0, rowspan=2, padx=(15, 0), pady=(20, 20), sticky="n")
         self.frame_status = ctk.CTkFrame(self)
-        self.frame_status.grid(row=0, column=1, padx=(66, 0), pady=(20, 0), sticky="n")
+        self.frame_status.grid(row=0, column=1, padx=(66, 0), pady=(20, 20), sticky="n")
         self.frame_ppm = ctk.CTkFrame(self)
         self.frame_ppm.grid(row=1, column=1, padx=(66, 0), sticky="n")
-        self.frame_zero_point = ctk.CTkFrame(self)
-        self.frame_zero_point.grid(row=1, column=0, padx=(15, 0))
+        self.frame_certificate = ctk.CTkFrame(self)
+        self.frame_certificate.grid(row=1, column=0, padx=(15, 0), pady=(40, 0))
         self.information_title = ctk.CTkFrame(self)
         self.information_title.grid(row=2, column=0, columnspan=2, sticky="n", padx=(20, 0), pady=(20, 10))
         self.information_serienummer = ctk.CTkFrame(self)
@@ -315,9 +290,13 @@ class MainApp(ctk.CTk):
                                                                                               pady=(0, 15))
         ctk.CTkButton(master=self.frame_button, text="Config", command=self.open_config).grid(row=3, column=0,
                                                                                               pady=(0, 15))
-        self.start_button = ctk.CTkButton(self, text="Start", width=300, height=100, state="disabled",command=self.start_program)
-        self.start_button.grid(row=6, column=0, columnspan=2, padx=(20, 0),pady=(10, 20), sticky="nsew")
+        self.start_button = ctk.CTkButton(self, text="Start", width=300, height=100, state="disabled",
+                                          command=self.start_program)
+        self.start_button.grid(row=6, column=0, columnspan=2, padx=(20, 0), pady=(10, 20), sticky="nsew")
         self.stop_button = ctk.CTkButton(self, text="Stop", width=300, height=100, command=lambda: self.start_stop(1))
+        self.zero_point_button = ctk.CTkButton(master=self.frame_ppm, text="Zero Point", state="disabled",
+                                               command=self.send_zero_point_command)
+        self.zero_point_button.grid(row=1, column=0, pady=(0, 17))
 
     def status_info(self):
         ctk.CTkLabel(master=self.frame_status, text="", height=0).grid(row=0, column=0, padx=100)
@@ -340,23 +319,26 @@ class MainApp(ctk.CTk):
                         self.serienummer = "Error"
                     else:
                         self.serienummer = str(read.decode()[5:13])
-                    print("Debug serienummer: ",self.serienummer)
                     self.connection.sensor.write(b"\x02\x36\x38\x30\x30\x30\x63\x03")
                     read = self.connection.sensor.read(1024).decode()
                     self.sensor_version = str(read[61:81])
                     self.sensor_type = str(read.split()[4])
                 except Exception as e:
-                    print("test1", e)
+                    print(e)
                     pass
 
     def status_channel(self):
         try:
             if len(self.ppm_value) > 0:
-                if self.channel_4 == self.ppm_value or self.channel_6 == self.ppm_value:
+                if self.channel_4 == round(float(self.ppm_value)) or self.channel_6 == round(float(self.ppm_value)):
                     self.status_channel_label.configure(text="Channel\nK4/K6")
-                else:
+                elif self.channel_1 == round(float(self.ppm_value)) or self.channel_2 == round(
+                        float(self.ppm_value) or self.channel_3 == round(float(self.ppm_value))):
                     self.status_channel_label.configure(text="Channel\nK1/K2/K3")
-        except Exception:
+                else:
+                    self.status_channel_label.configure(text="Channel\nUnknown")
+        except Exception as e:
+            print(e)
             pass
 
     def sensor_info(self):
@@ -371,7 +353,8 @@ class MainApp(ctk.CTk):
         self.temperature_label.grid(row=0, column=0, padx=20, pady=10)
 
     def set_sensor(self):
-        self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center",command=self.set_channel)
+        self.select_type_sensor = ctk.CTkComboBox(self, values=["V153", "V176", "V200"], justify="center",
+                                                  command=self.set_channel)
         self.select_type_sensor.grid(row=4, column=0, columnspan=2, padx=(20, 0), pady=(20, 0))
         self.select_type_sensor.set("Select a sensor")
 
@@ -410,6 +393,7 @@ class MainApp(ctk.CTk):
 
             # Check if serial number is unknown and update if necessary
             if self.serienummer_label.cget("text") == "Serie Nummer\nUnknown":
+                print("test")
                 self.sensor_info_con()
             elif self.serienummer_label.cget("text") == "Serie Nummer\nError":
                 self.sensor_info_con()
@@ -435,6 +419,7 @@ class MainApp(ctk.CTk):
                     self.serienummer_label.configure(text=f"Serie Nummer\n{self.serienummer}")
                     self.ppm_meter_label.configure(text=f"PPM value\n{self.ppm_value}")
                     self.temperature_label.configure(text=f"Temperature\n{self.temperature}")
+                    self.certification_button.configure(state="enabled")
                 else:
                     # Set sensor status to unknown if no response
                     self.serienummer = "Unknown"
@@ -460,6 +445,7 @@ class MainApp(ctk.CTk):
         self.ppm_meter_label.configure(text="Sensor not found")
         self.temperature_label.configure(text="Temperature\nUnknown")
         self.status_channel_label.configure(text="Channel\nUnknown")
+        # self.certification_button.configure(state="disabled")
 
     def flow_thread(self):
         # Continuous loop for flow communication
@@ -484,7 +470,6 @@ class MainApp(ctk.CTk):
 
     def status_update(self):
         # Update status variables and UI elements
-        print("Debug sensor_status: ", self.sensor_status)
         self.status_sensor_var.set(self.sensor_status)
         self.status_flow_var.set(self.flow_status)
         try:
@@ -508,16 +493,59 @@ class MainApp(ctk.CTk):
 
         # Initialize PPM meter label
         self.ppm_meter_label = ctk.CTkLabel(master=self.frame_ppm, text="Connecting...")
-        self.ppm_meter_label.grid(row=0, column=0, pady=17)
+        self.ppm_meter_label.grid(row=2, column=0, pady=17)
 
-    def zero_point(self):
+    def certificate(self):
         # Create empty label frame for zero point
-        ctk.CTkLabel(master=self.frame_zero_point, text="", height=0).grid(row=0, column=0, padx=100)
+        ctk.CTkLabel(master=self.frame_certificate, text="", height=0).grid(row=0, column=0, padx=100)
+        self.certification_button = ctk.CTkButton(self.frame_certificate, text="Certificate", height=50,
+                                                  font=ctk.CTkFont(size=17), command=self.make_certificate)
+        self.certification_button.grid(row=1, column=0, pady=(5, 25))
 
-        # Initialize zero point button
-        self.zero_point_button = ctk.CTkButton(master=self.frame_zero_point, text="Zero Point", state="disabled",
-                                               command=self.send_zero_point_command)
-        self.zero_point_button.grid(row=1, column=0, pady=(0, 17))
+    def make_certificate(self):
+        print(self.sensor_type)
+        if self.sensor_type == "153":
+            self.artikelnummer = "2SN100224"
+        elif self.sensor_type == "176":
+            self.artikelnummer = "2SN1001073"
+        elif self.sensor_type == "200":
+            self.artikelnummer = "2SN1001098"
+        else:
+            self.artikelnummer = "Error"
+            print("Something went wrong. No artikelnummer found")
+
+        response = ctkm.CTkMessagebox(title="Certificate", icon="warning",
+                                      message=f"Are you sure you want to upload the following:\nSerienummer: {self.serienummer}\nArtikelnummer: {self.artikelnummer}",
+                                      options=["Submit", "Cancel"])
+        if response.get() == "Submit":
+            try:
+                check_query = send_data(
+                    f"SELECT * FROM subproducts WHERE artikelnummer = '{self.artikelnummer}' AND serienummer = '{self.serienummer}';")
+                if not check_query:
+                    sql_query = "INSERT INTO subproducts (artikelnummer, serienummer) VALUES (%s, %s)"
+                    params = (self.artikelnummer, self.serienummer)
+                    send_data(sql_query, params)
+                    self.send_files_to_fileserver()
+                    ctkm.CTkMessagebox(title="Complete", icon="check", message="The product has been uploaded",
+                                       option_1="Continue")
+                else:
+                    response = ctkm.CTkMessagebox(title="Duplicate", icon="warning",
+                                                  message="A duplicate has been found\nDo you wish to overwrite existing document?",
+                                                  options=["Overwrite", "Cancel"])
+                    if response.get() == "Overwrite":
+                        self.send_files_to_fileserver()
+            except Exception as e:
+                ctkm.CTkMessagebox(title="Error", icon="cancel", message=e, option_1="Continue")
+
+    def send_files_to_fileserver(self):
+        destination_folder = os.path.join(fileserver, "subproducts", self.serienummer,
+                                          self.artikelnummer)
+        if not os.path.exists(destination_folder):
+            os.makedirs(destination_folder)
+        file_name = f"{self.serienummer}.xlsx"
+        folder_location = os.path.join(self.folder, self.artikelnummer, self.serienummer, file_name)
+        folder_location = folder_location.replace("/", "\ ".strip())
+        shutil.copy2(folder_location, destination_folder)
 
     def send_zero_point_command(self):
         # Send zero point command to sensor
@@ -532,7 +560,6 @@ class MainApp(ctk.CTk):
         self.row_value = 0
 
         # Read folder configuration
-        self.folder = readfile_value(8)
 
         # Get selected channel
         self.channel = self.channel_option.get()
@@ -547,12 +574,14 @@ class MainApp(ctk.CTk):
         # Initialize Excel settings
         self.excel_row = 2  # Start from row 2
         if os.path.exists(fr"{self.folder}/{self.folder_location}/{self.serienummer}/{self.serienummer}.xlsx"):
-            self.workbook = openpyxl.load_workbook(fr"{self.folder}/{self.folder_location}/{self.serienummer}/{self.serienummer}.xlsx")
+            self.workbook = openpyxl.load_workbook(
+                fr"{self.folder}/{self.folder_location}/{self.serienummer}/{self.serienummer}.xlsx")
         else:
-            self.workbook = openpyxl.load_workbook(fr"{self.folder}/{self.folder_location}/{self.excel_file}")  # Load workbook
+            self.workbook = openpyxl.load_workbook(
+                fr"{self.folder}/{self.folder_location}/{self.excel_file}")  # Load workbook
         print("Workbook: ", self.workbook)
         self.worksheet = self.workbook["Sheet1"]  # Select Sheet1
-        print("Worksheet: ",self.worksheet)
+        print("Worksheet: ", self.worksheet)
         self.worksheet['E2'] = self.serienummer  # Set serial number
         self.worksheet['E3'] = self.folder_location  # Set model
         self.worksheet['E4'] = self.sensor_version  # Set sensor version
@@ -691,7 +720,8 @@ class MainApp(ctk.CTk):
         self.main_run = False  # Set main run flag to False
         app = Configuration(self.connection, self.connection.sensor)
         # Handle window close event, switch main run flag, and start thread on exit
-        app.protocol("WM_DELETE_WINDOW",lambda: (app.destroy(), self.switch_main_run(), self.thread(), self.reset_channel_info()))
+        app.protocol("WM_DELETE_WINDOW",
+                     lambda: (app.destroy(), self.switch_main_run(), self.thread(), self.reset_channel_info()))
         app.mainloop()
 
     def open_validate(self):
@@ -773,13 +803,13 @@ class Configuration(ctk.CTk):
         self.sensor_com.set("Select a comport")
         self.sensor_com.bind('<<ComboboxSelected>>', self.get_sensor)
 
-    def get_sensor(self):
+    def get_sensor(self, event):
         # Get selected sensor comport
         self.comport_sensor = self.sensor_com.get()
         value = self.comport_sensor.split(" ")[0]
         text_config(9, value)
 
-    def get_flow(self):
+    def get_flow(self, event):
         # Get selected flow controller comport
         self.comport_flow = self.flow_com.get()
         value = self.comport_flow.split(" ")[0]
@@ -1004,13 +1034,14 @@ class SensorApp(ctk.CTk):
         # self.area_label.grid(row=5, column=0)
 
     def loop(self):
-    #     total_area = 0
-    #     y = 0
+        #     total_area = 0
+        #     y = 0
         while self.main_run:
-    #         y_old = self.ppm_value[0]
+            #         y_old = self.ppm_value[0]
             self.Masterchart.show_data(data=self.ppm_value, line=self.Drawline)
             self.ppm_value = [float(''.join(map(str, open("transfer.txt", "r").readlines())))]
             time.sleep(self.value_x_steps)
+
     #         y_new = self.ppm_value[0]
     #         if y_old <= 0 and y_new <= 0:
     #             if total_area != 0:
@@ -1129,4 +1160,4 @@ if __name__ == "__main__":
     # Initialize and run the application
     set_priority()
     threading.Thread(target=log, daemon=True).start()
-    update()
+    file_check()

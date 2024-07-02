@@ -8,11 +8,10 @@ import threading
 import logging
 from Config import text_config, readfile_value
 
-
 def log():
     while True:
-        logging.basicConfig(filename='log.txt', level=logging.NOTSET)
-        sys.stdout = sys.stderr = open('log.txt', 'a')
+        logging.basicConfig(filename='update_log.txt', level=logging.NOTSET)
+        sys.stdout = sys.stderr = open('update_log.txt', 'a')
 
 
 def update():
@@ -20,7 +19,7 @@ def update():
 
     # Replace 'YOUR_GITHUB_TOKEN' with your actual GitHub personal access token
     headers = {
-        'Authorization': 'token ',
+        'Authorization': 'token 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',
         'Accept': 'application/vnd.github.v3+json'
     }
 
@@ -88,6 +87,7 @@ def update():
                     shutil.rmtree(extract_folder)
                     print("Zip file deleted.")
                     text_config(12, latest_tag)
+                    os.system('start /B "Skalar Saxon Tester.exe"')
                 else:
                     print(f"Failed to download asset. Status code: {response.status_code}")
             else:
@@ -95,6 +95,7 @@ def update():
 
         else:
             print("No update found")
+            os.system('start /B "Skalar Saxon Tester.exe"')
 
 
 def parse_files_changed(body_text):
@@ -116,12 +117,10 @@ def parse_files_changed(body_text):
 
 def terminate_existing_main_processes():
     # Function to terminate existing instances of the main application process
-    current_pid = os.getpid()  # Get the PID of the current process
     for proc in psutil.process_iter(['pid', 'name']):
         # Iterate through all running processes
-        if proc.info['pid'] == current_pid:
-            # Check if the process PID matches the PID of the current process
-            os.system("Skalar Saxon Tester.exe")
+        if proc.info['name'] == 'Skalar Saxon Tester.exe':
+            # Check if the process name matches the main application
             proc.terminate()  # Terminate the process
 
 
